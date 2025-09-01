@@ -17,7 +17,7 @@ python run.py
 ```
 
 The entry script `run.py` configures the Proactor event loop on Windows before
-starting Uvicorn so that Playwright can spawn browser subprocesses.
+starting Hypercorn so that Playwright can spawn browser subprocesses.
 
 Open <http://localhost:8000> and paste any text containing IOCs. The interface parses the text into categories (IP addresses, domains, hashes, etc.) and lets you submit them for checking. Each IOC is queued and processed by Playwright workers with live status updates.
 

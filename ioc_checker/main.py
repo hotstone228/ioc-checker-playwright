@@ -1,5 +1,3 @@
-import sys
-import asyncio
 from pathlib import Path
 from contextlib import asynccontextmanager
 from collections.abc import AsyncIterator
@@ -19,10 +17,6 @@ from iocparser import IOCParser
 
 from .queue import add_task, get_task
 from .worker import start_workers
-
-
-if sys.platform.startswith("win"):
-    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 
 class ScanRequest(BaseModel):
