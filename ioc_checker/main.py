@@ -1,6 +1,7 @@
 from pathlib import Path
 from contextlib import asynccontextmanager
 from collections.abc import AsyncIterator
+import logging
 
 from fastapi import (
     FastAPI,
@@ -17,6 +18,9 @@ from iocparser import IOCParser
 
 from .queue import add_task, get_task
 from .worker import start_workers
+from .config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class ScanRequest(BaseModel):
@@ -30,8 +34,10 @@ class ParseRequest(BaseModel):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    start_workers(2)
+    logger.info("Starting %s worker(s)", settings.worker_count)
+    start_workers(settings.worker_count)
     yield
+    logger.info("Application shutdown")
 
 
 app = FastAPI(lifespan=lifespan)
@@ -44,8 +50,10 @@ async def index(request: Request) -> HTMLResponse:
 
 @app.post("/parse")
 async def parse_iocs(req: ParseRequest) -> dict[str, list[str]]:
+    logger.info("Parsing IOC text of length %d", len(req.text))
     parser = IOCParser(req.text)
     parsed = parser.parse()
+    logger.info("Found %d IOC(s)", len(parsed))
     result: dict[str, list[str]] = {}
     for item in parsed:
         key = item.kind.lower()
@@ -58,12 +66,14 @@ ALLOWED_FILE_TYPES = {".txt", ".log", ".csv", ".json"}
 
 @app.post("/parse-file")
 async def parse_file(file: UploadFile = File(...)) -> dict[str, list[str]]:
+    logger.info("Parsing uploaded file %s", file.filename)
     ext = Path(file.filename).suffix.lower()
     if ext not in ALLOWED_FILE_TYPES:
         raise HTTPException(status_code=400, detail="Unsupported file type")
     content = (await file.read()).decode("utf-8", "ignore")
     parser = IOCParser(content)
     parsed = parser.parse()
+    logger.info("Found %d IOC(s)", len(parsed))
     result: dict[str, list[str]] = {}
     for item in parsed:
         key = item.kind.lower()
@@ -73,6 +83,7 @@ async def parse_file(file: UploadFile = File(...)) -> dict[str, list[str]]:
 
 @app.post("/scan")
 async def scan(req: ScanRequest) -> dict:
+    logger.info("Queueing %d IOC(s) for service %s", len(req.iocs), req.service)
     task_ids = []
     for ioc in req.iocs:
         if not ioc:
@@ -83,6 +94,7 @@ async def scan(req: ScanRequest) -> dict:
 
 @app.get("/status/{task_id}")
 async def status(task_id: str) -> dict:
+    logger.debug("Status requested for task %s", task_id)
     task = get_task(task_id)
     if task is None:
         return {"error": "unknown task"}

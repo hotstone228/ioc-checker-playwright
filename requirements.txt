@@ -4,3 +4,4 @@ playwright
 iocparser
 python-multipart
 hypercorn
+httpx

@@ -1,9 +1,14 @@
 from contextlib import asynccontextmanager
 from typing import Any, Dict
 from collections.abc import AsyncIterator
+import logging
 
 from playwright.async_api import async_playwright, BrowserContext
 from iocparser import IOCParser
+
+from .config import settings
+
+logger = logging.getLogger(__name__)
 
 URL_MAP = {
     "ip": ("ip-address", "ip_addresses"),
@@ -26,17 +31,21 @@ def classify_ioc(ioc: str) -> str:
 
 @asynccontextmanager
 async def playwright_browser() -> AsyncIterator[BrowserContext]:
+    logger.info("Launching browser (headless=%s)", settings.headless)
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await p.chromium.launch(headless=settings.headless)
         context = await browser.new_context(ignore_https_errors=True)
         try:
+            logger.info("Browser context ready")
             yield context
         finally:
+            logger.info("Closing browser")
             await context.close()
             await browser.close()
 
 
 async def fetch_ioc_info(ioc: str, context: BrowserContext) -> Dict[str, Any]:
+    logger.info("Fetching %s from VirusTotal", ioc)
     ioc_type = classify_ioc(ioc)
     gui_seg, api_seg = URL_MAP[ioc_type]
     gui_url = f"https://www.virustotal.com/gui/{gui_seg}/{ioc}"
@@ -58,4 +67,5 @@ async def fetch_ioc_info(ioc: str, context: BrowserContext) -> Dict[str, Any]:
     if ioc_type == "ip":
         result["country"] = data.get("country")
         result["as_owner"] = data.get("as_owner")
+    logger.debug("Result for %s: %s", ioc, result)
     return result

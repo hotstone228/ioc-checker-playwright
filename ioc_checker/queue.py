@@ -2,6 +2,7 @@ import asyncio
 import uuid
 from dataclasses import dataclass
 from typing import Dict, Optional
+import logging
 
 @dataclass
 class Task:
@@ -16,12 +17,15 @@ class Task:
 _tasks: Dict[str, Task] = {}
 queue: asyncio.Queue[str] = asyncio.Queue()
 
+logger = logging.getLogger(__name__)
+
 
 async def add_task(ioc: str, service: str = "virustotal") -> str:
     task_id = str(uuid.uuid4())
     task = Task(id=task_id, ioc=ioc, service=service)
     _tasks[task_id] = task
     await queue.put(task_id)
+    logger.info("Queued task %s for %s", task_id, service)
     return task_id
 
 def get_task(task_id: str) -> Optional[Task]:
