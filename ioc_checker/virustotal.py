@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
-from typing import Any, Dict, AsyncIterator
+from typing import Any, Dict
+from collections.abc import AsyncIterator
 
 from playwright.async_api import async_playwright, BrowserContext
 from iocparser import IOCParser

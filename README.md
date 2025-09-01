@@ -16,6 +16,9 @@ playwright install chromium
 uvicorn ioc_checker.main:app --reload
 ```
 
+On Windows, the application automatically configures the Proactor event loop so that
+Playwright can spawn browser subprocesses.
+
 Open <http://localhost:8000> and paste any text containing IOCs. The interface parses the text into categories (IP addresses, domains, hashes, etc.) and lets you submit them for checking. Each IOC is queued and processed by Playwright workers with live status updates.
 
 ### API
