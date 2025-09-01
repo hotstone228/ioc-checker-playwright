@@ -3,24 +3,54 @@
 <head>
     <meta charset="utf-8" />
     <title>IOC Checker</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
 </head>
-<body>
-    <h1>IOC Checker</h1>
-    <textarea id="ioc-input" rows="10" cols="60" placeholder="Enter one IOC per line"></textarea><br />
-    <button onclick="submitIOCs()">Submit</button>
-    <div id="results"></div>
+<body class="section">
+<div class="container">
+    <h1 class="title">IOC Checker</h1>
+    <textarea id="raw-input" class="textarea" placeholder="Paste text containing IOCs"></textarea>
+    <button class="button is-primary mt-2" onclick="parseIOCs()">Parse</button>
+    <div id="parsed" class="columns mt-4"></div>
+    <button class="button is-link mt-2" onclick="submitScans()">Scan Parsed IOCs</button>
+    <div id="results" class="mt-4"></div>
+</div>
 <script>
-async function submitIOCs(){
-    const raw = document.getElementById('ioc-input').value.trim();
-    if(!raw) return;
-    const iocs = raw.split(/\n+/).map(x=>x.trim()).filter(Boolean);
-    const res = await fetch('/scan', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(iocs)});
+async function parseIOCs(){
+    const raw = document.getElementById('raw-input').value;
+    const res = await fetch('/parse', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({text: raw})});
+    const data = await res.json();
+    const container = document.getElementById('parsed');
+    container.innerHTML = '';
+    Object.keys(data).forEach(key => {
+        const col = document.createElement('div');
+        col.className = 'column';
+        const label = document.createElement('label');
+        label.className = 'label';
+        label.textContent = key;
+        const ta = document.createElement('textarea');
+        ta.id = 'parsed-' + key;
+        ta.className = 'textarea';
+        ta.value = data[key].join('\n');
+        col.appendChild(label);
+        col.appendChild(ta);
+        container.appendChild(col);
+    });
+}
+async function submitScans(){
+    const areas = document.querySelectorAll('[id^="parsed-"]');
+    let iocs = [];
+    areas.forEach(a => {
+        const vals = a.value.trim().split(/\n+/).filter(Boolean);
+        iocs = iocs.concat(vals);
+    });
+    if(!iocs.length) return;
+    const res = await fetch('/scan', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({service: 'virustotal', iocs})});
     const data = await res.json();
     const container = document.getElementById('results');
     container.innerHTML = '';
     data.tasks.forEach(t => {
         const div = document.createElement('div');
-        div.id = 'task-'+t.id;
+        div.id = 'task-' + t.id;
         div.textContent = `${t.ioc} : queued`;
         container.appendChild(div);
         poll(t.id, div);
@@ -30,7 +60,7 @@ async function poll(id, element){
     const res = await fetch(`/status/${id}`);
     const data = await res.json();
     if(data.status){
-        element.textContent = `${data.ioc} : ${data.status}${data.result ? ' => '+JSON.stringify(data.result):''}`;
+        element.textContent = `${data.ioc} : ${data.status}${data.result ? ' => ' + JSON.stringify(data.result): ''}`;
         if(data.status === 'queued' || data.status === 'processing'){
             setTimeout(()=>poll(id, element), 1000);
         }

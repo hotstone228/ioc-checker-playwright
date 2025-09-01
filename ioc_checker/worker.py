@@ -12,8 +12,11 @@ async def worker() -> None:
                 continue
             task.status = "processing"
             try:
-                task.result = await virustotal.fetch_ioc_info(task.ioc, browser_context)
-                task.status = "done"
+                if task.service == "virustotal":
+                    task.result = await virustotal.fetch_ioc_info(task.ioc, browser_context)
+                    task.status = "done"
+                else:
+                    raise ValueError(f"unsupported service {task.service}")
             except Exception as exc:  # noqa: BLE001
                 task.status = "error"
                 task.error = str(exc)

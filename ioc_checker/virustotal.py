@@ -1,7 +1,8 @@
-import re
 from contextlib import asynccontextmanager
-from typing import Any, Dict
+from typing import Any, Dict, AsyncIterator
+
 from playwright.async_api import async_playwright, BrowserContext
+from iocparser import IOCParser
 
 URL_MAP = {
     "ip": ("ip-address", "ip_addresses"),
@@ -9,20 +10,21 @@ URL_MAP = {
     "hash": ("file", "files"),
 }
 
-IP_RE = re.compile(r"^(?:\d{1,3}\.){3}\d{1,3}$")
-HASH_RE = re.compile(r"^[A-Fa-f0-9]{32,64}$")
-
 
 def classify_ioc(ioc: str) -> str:
-    if IP_RE.match(ioc):
+    parsed = IOCParser(ioc).parse()
+    if not parsed:
+        return "domain"
+    kind = parsed[0].kind.lower()
+    if kind in {"ip", "ipv4", "ipv6"}:
         return "ip"
-    if HASH_RE.match(ioc):
+    if kind in {"md5", "sha1", "sha256", "sha512"}:
         return "hash"
     return "domain"
 
 
 @asynccontextmanager
-async def playwright_browser() -> BrowserContext:
+async def playwright_browser() -> AsyncIterator[BrowserContext]:
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         context = await browser.new_context(ignore_https_errors=True)
