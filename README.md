@@ -13,11 +13,11 @@ This project demonstrates a small microservice-style application that accepts In
 ```bash
 pip install -r requirements.txt
 playwright install chromium
-uvicorn ioc_checker.main:app --reload
+python run.py
 ```
 
-On Windows, the application automatically configures the Proactor event loop so that
-Playwright can spawn browser subprocesses.
+The entry script `run.py` configures the Proactor event loop on Windows before
+starting Uvicorn so that Playwright can spawn browser subprocesses.
 
 Open <http://localhost:8000> and paste any text containing IOCs. The interface parses the text into categories (IP addresses, domains, hashes, etc.) and lets you submit them for checking. Each IOC is queued and processed by Playwright workers with live status updates.
 
