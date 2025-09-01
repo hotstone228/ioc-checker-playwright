@@ -10,15 +10,22 @@
     <h1 class="title">IOC Checker</h1>
     <textarea id="raw-input" class="textarea" placeholder="Paste text containing IOCs"></textarea>
     <button class="button is-primary mt-2" onclick="parseIOCs()">Parse</button>
+    <div class="file has-name mt-4">
+        <label class="file-label">
+            <input class="file-input" type="file" id="file-input" accept=".txt,.log,.csv,.json">
+            <span class="file-cta">
+                <span class="file-label">Choose a file…</span>
+            </span>
+            <span class="file-name" id="file-name"></span>
+        </label>
+    </div>
+    <button class="button is-primary mt-2" onclick="parseFile()">Parse File</button>
     <div id="parsed" class="columns mt-4"></div>
     <button class="button is-link mt-2" onclick="submitScans()">Scan Parsed IOCs</button>
     <div id="results" class="mt-4"></div>
 </div>
 <script>
-async function parseIOCs(){
-    const raw = document.getElementById('raw-input').value;
-    const res = await fetch('/parse', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({text: raw})});
-    const data = await res.json();
+function displayParsed(data){
     const container = document.getElementById('parsed');
     container.innerHTML = '';
     Object.keys(data).forEach(key => {
@@ -36,6 +43,33 @@ async function parseIOCs(){
         container.appendChild(col);
     });
 }
+
+async function parseIOCs(){
+    const raw = document.getElementById('raw-input').value;
+    const res = await fetch('/parse', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({text: raw})});
+    const data = await res.json();
+    displayParsed(data);
+}
+
+async function parseFile(){
+    const fileInput = document.getElementById('file-input');
+    if(!fileInput.files.length) return;
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    const res = await fetch('/parse-file', {method:'POST', body: formData});
+    const data = await res.json();
+    displayParsed(data);
+}
+
+document.getElementById('file-input').addEventListener('change', () => {
+    const fileInput = document.getElementById('file-input');
+    const fileName = document.getElementById('file-name');
+    if(fileInput.files.length){
+        fileName.textContent = fileInput.files[0].name;
+    } else {
+        fileName.textContent = '';
+    }
+});
 async function submitScans(){
     const areas = document.querySelectorAll('[id^="parsed-"]');
     let iocs = [];

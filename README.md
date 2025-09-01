@@ -21,6 +21,7 @@ Open <http://localhost:8000> and paste any text containing IOCs. The interface p
 ### API
 
 - `POST /parse` – body `{ "text": "..." }` returns detected IOCs grouped by type.
+- `POST /parse-file` – multipart upload of a text-based file (`.txt`, `.log`, `.csv`, `.json`) returning detected IOCs.
 - `POST /scan` – body `{ "service": "virustotal", "iocs": ["..."] }` queues IOCs for the specified service.
 - `GET /status/{id}` – retrieve task progress and results.
 

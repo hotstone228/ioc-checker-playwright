@@ -1,6 +1,14 @@
 from pathlib import Path
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
+from typing import AsyncIterator
+
+from fastapi import (
+    FastAPI,
+    Request,
+    UploadFile,
+    File,
+    HTTPException,
+)
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -21,7 +29,7 @@ class ParseRequest(BaseModel):
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     start_workers(2)
     yield
 
@@ -37,6 +45,24 @@ async def index(request: Request) -> HTMLResponse:
 @app.post("/parse")
 async def parse_iocs(req: ParseRequest) -> dict[str, list[str]]:
     parser = IOCParser(req.text)
+    parsed = parser.parse()
+    result: dict[str, list[str]] = {}
+    for item in parsed:
+        key = item.kind.lower()
+        result.setdefault(key, []).append(item.value)
+    return result
+
+
+ALLOWED_FILE_TYPES = {".txt", ".log", ".csv", ".json"}
+
+
+@app.post("/parse-file")
+async def parse_file(file: UploadFile = File(...)) -> dict[str, list[str]]:
+    ext = Path(file.filename).suffix.lower()
+    if ext not in ALLOWED_FILE_TYPES:
+        raise HTTPException(status_code=400, detail="Unsupported file type")
+    content = (await file.read()).decode("utf-8", "ignore")
+    parser = IOCParser(content)
     parsed = parser.parse()
     result: dict[str, list[str]] = {}
     for item in parsed:
