@@ -1,11 +1,11 @@
 # IOC Checker with Playwright
 
-This project demonstrates a small microservice-style application that accepts Indicators of Compromise (IOCs) and fetches their VirusTotal web results using [Playwright](https://playwright.dev). Parsing of IOCs relies on the [iocparser](https://pypi.org/project/iocparser/) library.
+This project demonstrates a small microservice-style application that accepts Indicators of Compromise (IOCs) and fetches their reputations from services such as VirusTotal and Kaspersky OpenTIP. VirusTotal lookups are performed via [Playwright](https://playwright.dev) while Kaspersky requests use the official REST API. Parsing of IOCs relies on the [iocparser](https://pypi.org/project/iocparser/) library.
 
 ## Components
 
 - **FastAPI web UI** – parse and submit IOCs with progress updates.
-- **Worker** – consumes a queue and performs VirusTotal lookups through the public web interface (no API key required).
+- **Worker** – consumes a queue and performs lookups against the configured providers (VirusTotal via Playwright, Kaspersky OpenTIP via HTTP API).
 - **Queue** – in-memory task queue coordinating the two components.
 
 ## Running
@@ -28,10 +28,12 @@ Results are rendered inline with icons and a concise summary of VirusTotal reput
 Runtime options live in `config.toml`:
 
 ```toml
-worker_count = 2        # number of Playwright workers
+worker_count = 2        # number of worker tasks
 headless = false        # show browser windows for debugging
 log_level = "DEBUG"     # logging verbosity
 wait_until = "domcontentloaded" # page load milestone for VirusTotal navigation
+providers = ["virustotal", "kaspersky"] # enabled reputation services
+kaspersky_token = ""   # optional API token for Kaspersky OpenTIP
 ```
 
 Adjust these values to change worker pool size, toggle headless mode, or modify log levels for all services. `wait_until` accepts
@@ -41,7 +43,7 @@ any Playwright load milestone: `commit`, `domcontentloaded`, `load`, or `network
 
 - `POST /parse` – body `{ "text": "..." }` returns detected IOCs grouped by type.
 - `POST /parse-file` – multipart upload of a text-based file (`.txt`, `.log`, `.csv`, `.json`) returning detected IOCs.
-- `POST /scan` – body `{ "service": "virustotal", "iocs": ["..."] }` queues IOCs for the specified service.
+- `POST /scan` – body `{ "service": "virustotal" | "kaspersky", "iocs": ["..."] }` queues IOCs for the specified service.
 - `GET /status/{id}` – retrieve task progress and results.
 
 ## Notes

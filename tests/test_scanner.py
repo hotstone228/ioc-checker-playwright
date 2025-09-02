@@ -6,6 +6,7 @@ import pytest
 
 from ioc_checker import main, worker
 from ioc_checker.queue import queue
+from contextlib import asynccontextmanager
 
 IOC_LIST = [
     "1.1.1.1",
@@ -37,10 +38,21 @@ def test_parse_iocs(monkeypatch):
 
 def test_scan_iocs(monkeypatch):
     monkeypatch.setattr(main.settings, "worker_count", 1)
-    monkeypatch.setattr(worker.virustotal.settings, "headless", True)
+    monkeypatch.setattr(main.settings, "providers", ["kaspersky"])
+    monkeypatch.setattr(worker.settings, "providers", ["kaspersky"])
+
+    @asynccontextmanager
+    async def fake_ctx():
+        yield {}
+
+    async def fake_fetch(ioc, ctx):
+        return {"ioc": ioc}
+
+    monkeypatch.setattr(worker.SERVICE_MAP["kaspersky"], "get_context", fake_ctx)
+    monkeypatch.setattr(worker.SERVICE_MAP["kaspersky"], "fetch_ioc_info", fake_fetch)
 
     with TestClient(main.app) as client:
-        resp = client.post("/scan", json={"iocs": IOC_LIST, "service": "virustotal"})
+        resp = client.post("/scan", json={"iocs": IOC_LIST, "service": "kaspersky"})
         assert resp.status_code == 200
         tasks = resp.json()["tasks"]
         assert len(tasks) == len(IOC_LIST)

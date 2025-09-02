@@ -4,11 +4,13 @@ from dataclasses import dataclass
 from typing import Dict, Optional
 import logging
 
+from .config import settings
+
 @dataclass
 class Task:
     id: str
     ioc: str
-    service: str = "virustotal"
+    service: str = settings.providers[0]
     status: str = "queued"  # queued, processing, done, error
     result: Optional[dict] = None
     error: Optional[str] = None
@@ -20,7 +22,7 @@ queue: asyncio.Queue[str] = asyncio.Queue()
 logger = logging.getLogger(__name__)
 
 
-async def add_task(ioc: str, service: str = "virustotal") -> str:
+async def add_task(ioc: str, service: str = settings.providers[0]) -> str:
     task_id = str(uuid.uuid4())
     task = Task(id=task_id, ioc=ioc, service=service)
     _tasks[task_id] = task

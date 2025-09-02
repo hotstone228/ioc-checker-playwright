@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 import logging
 import tomllib
@@ -11,6 +11,8 @@ class Settings:
     headless: bool = False
     log_level: str = "DEBUG"
     wait_until: Literal["commit", "domcontentloaded", "load", "networkidle"] = "domcontentloaded"
+    providers: list[str] = field(default_factory=lambda: ["virustotal"])
+    kaspersky_token: str | None = None
 
 
 def load_settings() -> Settings:
@@ -21,6 +23,8 @@ def load_settings() -> Settings:
     valid = {"commit", "domcontentloaded", "load", "networkidle"}
     if data.get("wait_until") not in valid:
         data.pop("wait_until", None)
+    if not isinstance(data.get("providers"), list):
+        data.pop("providers", None)
     return Settings(**data)
 
 

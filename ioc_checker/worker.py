@@ -1,13 +1,33 @@
 import asyncio
 import logging
+from contextlib import AsyncExitStack
+from typing import Dict, Any
+
 from .queue import queue, get_task
-from . import virustotal
+from .config import settings
+from . import virustotal, kaspersky
 
 logger = logging.getLogger(__name__)
 
+
+SERVICE_MAP: Dict[str, Any] = {
+    "virustotal": virustotal,
+    "kaspersky": kaspersky,
+}
+
+
 async def worker() -> None:
     logger.info("Worker started")
-    async with virustotal.playwright_browser() as browser_context:
+    stack = AsyncExitStack()
+    contexts: Dict[str, Any] = {}
+    for name in settings.providers:
+        module = SERVICE_MAP.get(name)
+        if not module:
+            logger.warning("Unknown provider %s configured", name)
+            continue
+        ctx = await stack.enter_async_context(module.get_context())
+        contexts[name] = ctx
+    try:
         while True:
             task_id = await queue.get()
             logger.info("Processing task %s", task_id)
@@ -18,8 +38,10 @@ async def worker() -> None:
                 continue
             task.status = "processing"
             try:
-                if task.service == "virustotal":
-                    task.result = await virustotal.fetch_ioc_info(task.ioc, browser_context)
+                module = SERVICE_MAP.get(task.service)
+                context = contexts.get(task.service)
+                if module and context is not None:
+                    task.result = await module.fetch_ioc_info(task.ioc, context)
                     task.status = "done"
                     logger.info("Task %s completed", task_id)
                 else:
@@ -29,6 +51,8 @@ async def worker() -> None:
                 task.error = str(exc)
                 logger.exception("Task %s failed: %s", task_id, exc)
             queue.task_done()
+    finally:
+        await stack.aclose()
 
 
 def start_workers(count: int = 1) -> None:

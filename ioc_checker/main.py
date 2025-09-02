@@ -35,7 +35,7 @@ KIND_MAP = {
 
 class ScanRequest(BaseModel):
     iocs: list[str]
-    service: str = "virustotal"
+    service: str = settings.providers[0]
 
 
 class ParseRequest(BaseModel):
