@@ -5,7 +5,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from ioc_checker.config import settings
 from ioc_checker.virustotal import playwright_browser, fetch_ioc_info
+
+settings.headless = True
 
 NON_EXISTENT_HASH = "475F6E68E30D296766CC730B6C882653A5EB9A04031812FF0426D081F1FC86BD"
 NON_EXISTENT_DOMAIN = "rambler.r"

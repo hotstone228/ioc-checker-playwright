@@ -16,12 +16,6 @@ URL_MAP = {
     "hash": ("file", "files"),
 }
 
-TAG_PATHS = {
-    "ip": ("ip-address-view", "vt-ui-ip-card"),
-    "domain": ("domain-view", "vt-ui-domain-card"),
-    "hash": ("file-view", "vt-ui-file-card"),
-}
-
 
 def classify_ioc(ioc: str) -> str:
     parsed = IOCParser(ioc).parse()
@@ -58,40 +52,10 @@ async def fetch_ioc_info(ioc: str, context: BrowserContext) -> Dict[str, Any]:
     api_url = f"https://www.virustotal.com/ui/{api_seg}/{ioc}?relationships=*"
 
     page = await context.new_page()
-    await page.goto(gui_url, wait_until=settings.wait_until)
-    response = await context.request.get(api_url)
-    if response.status != 200:
-        await page.close()
-        raise ValueError(f"IOC {ioc} not found")
-    try:
-        data = (await response.json())["data"]["attributes"]
-    except Exception as exc:  # noqa: BLE001
-        await page.close()
-        raise ValueError(f"IOC {ioc} not found") from exc
-
-    # Some nonexistent IOCs redirect to a generic search page with an
-    # "Item not found" message but still return 200 from the API. Detect
-    # this by looking for the message in the GUI page.
-    if "Item not found" in await page.content():
-        await page.close()
-        raise ValueError(f"IOC {ioc} not found")
-
-    tags: list[str] = []
-    view_tag, card_tag = TAG_PATHS.get(ioc_type, (None, None))
-    if view_tag and card_tag:
-        js = f"""
-        () => {{
-            const view = document.querySelector('#view-container > {view_tag}');
-            if (!view) return [];
-            const card = view.shadowRoot.querySelector('div > div > div.col-12.col-md > {card_tag}');
-            if (!card) return [];
-            return Array.from(card.shadowRoot.querySelectorAll('div > div.card-body.d-flex > div > div.hstack.gap-2 > a')).map(e => e.textContent.trim());
-        }}
-        """
-        try:
-            tags = await page.evaluate(js)
-        except Exception as exc:  # noqa: BLE001
-            logger.debug("Tag extraction failed for %s: %s", ioc, exc)
+    async with page.expect_response(lambda r: r.url.startswith(api_url)) as resp_info:
+        await page.goto(gui_url, wait_until="networkidle")
+    response = await resp_info.value
+    data = (await response.json())["data"]["attributes"]
     await page.close()
 
     result: Dict[str, Any] = {
@@ -99,7 +63,6 @@ async def fetch_ioc_info(ioc: str, context: BrowserContext) -> Dict[str, Any]:
         "type": ioc_type,
         "reputation": data.get("reputation"),
         "last_analysis_stats": data.get("last_analysis_stats", {}),
-        "tags": tags,
     }
     if ioc_type == "ip":
         result["country"] = data.get("country")

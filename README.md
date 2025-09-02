@@ -16,14 +16,9 @@ playwright install chromium
 python run.py
 ```
 
-The entry script `run.py` configures the Proactor event loop on Windows before
-starting Hypercorn so that Playwright can spawn browser subprocesses.
+The entry script `run.py` configures the Proactor event loop on Windows before starting Hypercorn so that Playwright can spawn browser subprocesses.
 
-Open <http://localhost:8000> and paste any text containing IOCs. The left pane auto-parses as you type (or after uploading a file) and the right pane groups supported IOCs (IPv4, FQDN, hashes). Each group provides its own **Scan** button, or use **Scan all** to submit everything. Scan results appear inline next to each IOC with icons and tags, and **Copy malicious** copies all detected malicious IOCs to your clipboard.
-
-Use the moon/sun button to toggle light and dark themes. Invalid or unknown IOCs return an error badge instead of scan results.
-
-Results are rendered inline with icons and a concise summary of VirusTotal reputation, detection counts, and any tags associated with the IOC.
+Open <http://localhost:8000> and paste any text containing IOCs. The interface parses the text into categories (IP addresses, domains, hashes, etc.) and lets you submit them for checking. Each IOC is queued and processed by Playwright workers with live status updates.
 
 ### Configuration
 
@@ -32,12 +27,10 @@ Runtime options live in `config.toml`:
 ```toml
 worker_count = 2        # number of Playwright workers
 headless = false        # show browser windows for debugging
-log_level = "DEBUG"     # logging verbosity
-wait_until = "domcontentloaded" # page load milestone for VirusTotal navigation
+log_level = "INFO"      # logging verbosity
 ```
 
-Adjust these values to change worker pool size, toggle headless mode, or modify log levels for all services. `wait_until` accepts
-any Playwright load milestone: `commit`, `domcontentloaded`, `load`, or `networkidle`.
+Adjust these values to change worker pool size, toggle headless mode, or modify log levels for all services.
 
 ### API
 
