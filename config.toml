@@ -2,5 +2,4 @@ worker_count = 2
 headless = false
 log_level = "DEBUG"
 wait_until = "domcontentloaded"
-providers = ["virustotal", "kaspersky"]
-kaspersky_token = ""
+providers = ["kaspersky"]
