@@ -21,7 +21,7 @@ starting Hypercorn so that Playwright can spawn browser subprocesses.
 
 Open <http://localhost:8000> and paste any text containing IOCs. The left pane auto-parses as you type (or after uploading a file) and the right pane groups supported IOCs (IPv4, FQDN, hashes). Each group provides its own **Scan** button, or use **Scan all** to submit everything. Scan results appear inline next to each IOC with icons and tags, and **Copy malicious** copies all detected malicious IOCs to your clipboard.
 
-Results are rendered inline with icons and a concise summary of VirusTotal reputation, detection counts, and any tags associated with the IOC.
+Use the **Provider** dropdown to select which reputation service to query. Results are rendered inline with icons and a concise summary of reputation, detection counts, and any tags associated with the IOC.
 
 ### Configuration
 

@@ -69,6 +69,18 @@
                 <textarea id="raw-input" class="textarea" placeholder="Paste text containing IOCs"></textarea>
             </div>
         </div>
+        <div class="field">
+            <label class="label has-text-light">Provider</label>
+            <div class="control">
+                <div class="select is-fullwidth">
+                    <select id="provider">
+                        {% for p in providers %}
+                        <option value="{{p}}">{{p}}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
         <div class="field is-grouped">
             <div class="control">
                 <button class="button is-link" id="scan-all">Scan all</button>
@@ -83,6 +95,8 @@
 
 <script>
 let parsedData = {};
+
+document.getElementById('provider').addEventListener('change', renderParsed);
 
 const fileInput = document.getElementById('file-input');
 document.getElementById('upload-btn').addEventListener('click', () => fileInput.click());
@@ -118,11 +132,12 @@ function renderParsed(){
         title.textContent = kind;
         box.appendChild(title);
         const list = document.createElement('div');
+        const provider = document.getElementById('provider').value;
         values.forEach(val => {
             const item = document.createElement('div');
             item.className = 'ioc-item';
             const link = document.createElement('a');
-            link.href = vtLink(kind,val);
+            link.href = iocLink(provider, kind, val);
             link.target = '_blank';
             link.textContent = val;
             item.appendChild(link);
@@ -141,7 +156,10 @@ function renderParsed(){
     });
 }
 
-function vtLink(kind, value){
+function iocLink(provider, kind, value){
+    if(provider === 'kaspersky'){
+        return `https://opentip.kaspersky.com/${value}`;
+    }
     if(kind === 'ipv4') return `https://www.virustotal.com/gui/ip-address/${value}`;
     if(kind === 'fqdn') return `https://www.virustotal.com/gui/domain/${value}`;
     return `https://www.virustotal.com/gui/file/${value}`;
@@ -149,7 +167,8 @@ function vtLink(kind, value){
 
 function scan(iocs){
     if(!iocs.length) return;
-    fetch('/scan', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({service:'virustotal', iocs})})
+    const service = document.getElementById('provider').value;
+    fetch('/scan', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({service, iocs})})
         .then(r => r.json())
         .then(data => {
             data.tasks.forEach(t => {

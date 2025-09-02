@@ -56,7 +56,9 @@ templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request) -> HTMLResponse:
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(
+        "index.html", {"request": request, "providers": settings.providers}
+    )
 
 @app.post("/parse")
 async def parse_iocs(req: ParseRequest) -> dict[str, list[str]]:
