@@ -53,7 +53,7 @@ async def fetch_ioc_info(ioc: str, context: BrowserContext) -> Dict[str, Any]:
 
     page = await context.new_page()
     async with page.expect_response(lambda r: r.url.startswith(api_url)) as resp_info:
-        await page.goto(gui_url, wait_until="networkidle")
+        await page.goto(gui_url, wait_until=settings.wait_until)
     response = await resp_info.value
     data = (await response.json())["data"]["attributes"]
     await page.close()

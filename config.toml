@@ -1,3 +1,4 @@
 worker_count = 2
 headless = false
 log_level = "INFO"
+wait_until = "networkidle"

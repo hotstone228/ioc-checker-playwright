@@ -29,9 +29,11 @@ Runtime options live in `config.toml`:
 worker_count = 2        # number of Playwright workers
 headless = false        # show browser windows for debugging
 log_level = "INFO"      # logging verbosity
+wait_until = "networkidle" # page load milestone for VirusTotal navigation
 ```
 
-Adjust these values to change worker pool size, toggle headless mode, or modify log levels for all services.
+Adjust these values to change worker pool size, toggle headless mode, or modify log levels for all services. `wait_until` accepts
+any Playwright load milestone: `commit`, `domcontentloaded`, `load`, or `networkidle`.
 
 ### API
 
