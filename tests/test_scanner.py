@@ -1,7 +1,6 @@
 import sys, pathlib
 sys.path.append(str(pathlib.Path(__file__).resolve().parent.parent))
 import asyncio
-from contextlib import asynccontextmanager
 from fastapi.testclient import TestClient
 import pytest
 
@@ -37,26 +36,8 @@ def test_parse_iocs(monkeypatch):
 
 
 def test_scan_iocs(monkeypatch):
-    class DummyPage:
-        async def goto(self, url: str, wait_until=None) -> None:
-            return None
-
-        async def close(self) -> None:
-            return None
-
-    class DummyContext:
-        async def new_page(self) -> DummyPage:
-            return DummyPage()
-
-    @asynccontextmanager
-    async def dummy_browser():
-        yield DummyContext()
-
-    async def dummy_fetch_ioc_info(ioc: str, context: DummyContext):
-        return {"ioc": ioc, "fetched": True}
-
-    monkeypatch.setattr(worker.virustotal, "playwright_browser", dummy_browser)
-    monkeypatch.setattr(worker.virustotal, "fetch_ioc_info", dummy_fetch_ioc_info)
+    monkeypatch.setattr(main.settings, "worker_count", 1)
+    monkeypatch.setattr(worker.virustotal.settings, "headless", True)
 
     with TestClient(main.app) as client:
         resp = client.post("/scan", json={"iocs": IOC_LIST, "service": "virustotal"})
