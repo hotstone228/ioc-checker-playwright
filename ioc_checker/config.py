@@ -13,6 +13,7 @@ class Settings:
     wait_until: Literal["commit", "domcontentloaded", "load", "networkidle"] = "domcontentloaded"
     providers: list[str] = field(default_factory=lambda: ["virustotal"])
     kaspersky_token: str | None = None
+    database_url: str = "sqlite+aiosqlite:///./cache.db"
 
 
 def load_settings() -> Settings:

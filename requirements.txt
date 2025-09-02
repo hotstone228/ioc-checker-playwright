@@ -5,3 +5,5 @@ iocparser
 python-multipart
 hypercorn
 httpx
+sqlalchemy
+aiosqlite

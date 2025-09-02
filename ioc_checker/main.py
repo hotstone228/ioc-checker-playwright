@@ -19,6 +19,7 @@ from iocparser import IOCParser
 from .queue import add_task, get_task
 from .worker import start_workers
 from .config import settings
+from .database import init_db
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,7 @@ class ParseRequest(BaseModel):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    await init_db()
     logger.info("Starting %s worker(s)", settings.worker_count)
     start_workers(settings.worker_count)
     yield
