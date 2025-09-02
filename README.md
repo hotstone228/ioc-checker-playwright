@@ -33,11 +33,14 @@ headless = false        # show browser windows for debugging
 log_level = "DEBUG"     # logging verbosity
 wait_until = "domcontentloaded" # page load milestone for VirusTotal navigation
 providers = ["virustotal", "kaspersky"] # enabled reputation services
-kaspersky_token = ""   # optional API token for Kaspersky OpenTIP
+# API tokens can be supplied via secrets.toml (see secrets.toml.example)
+kaspersky_token = ""
 ```
 
 Adjust these values to change worker pool size, toggle headless mode, or modify log levels for all services. `wait_until` accepts
 any Playwright load milestone: `commit`, `domcontentloaded`, `load`, or `networkidle`.
+
+If present, `secrets.toml` overrides settings from `config.toml` and is ignored by git; copy `secrets.toml.example` and place your `kaspersky_token` there to keep credentials out of version control.
 
 ### API
 

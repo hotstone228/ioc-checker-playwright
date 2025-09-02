@@ -16,10 +16,15 @@ class Settings:
 
 
 def load_settings() -> Settings:
-    path = Path(__file__).resolve().parent.parent / "config.toml"
+    base = Path(__file__).resolve().parent.parent
+    path = base / "config.toml"
     data = {}
     if path.exists():
         data = tomllib.loads(path.read_text())
+    secret_path = base / "secrets.toml"
+    if secret_path.exists():
+        secrets = tomllib.loads(secret_path.read_text())
+        data.update(secrets)
     valid = {"commit", "domcontentloaded", "load", "networkidle"}
     if data.get("wait_until") not in valid:
         data.pop("wait_until", None)
