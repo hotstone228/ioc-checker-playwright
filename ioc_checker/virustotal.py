@@ -61,7 +61,14 @@ async def fetch_ioc_info(ioc: str, context: BrowserContext) -> Dict[str, Any]:
     async with page.expect_response(lambda r: r.url.startswith(api_url)) as resp_info:
         await page.goto(gui_url, wait_until=settings.wait_until)
     response = await resp_info.value
-    data = (await response.json())["data"]["attributes"]
+    if not response.ok:
+        await page.close()
+        raise ValueError(f"IOC {ioc} not found")
+    try:
+        data = (await response.json())["data"]["attributes"]
+    except Exception as exc:  # noqa: BLE001
+        await page.close()
+        raise ValueError(f"IOC {ioc} not found") from exc
 
     tags: list[str] = []
     view_tag, card_tag = TAG_PATHS.get(ioc_type, (None, None))

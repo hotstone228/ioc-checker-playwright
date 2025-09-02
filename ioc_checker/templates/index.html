@@ -6,11 +6,16 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body class="section">
-<div class="container">
-    <h1 class="title">IOC Checker</h1>
-    <div class="columns">
-        <div class="column is-half">
+<body class="section" id="body">
+<div class="container is-fluid">
+    <div class="level">
+        <div class="level-left"><h1 class="title">IOC Checker</h1></div>
+        <div class="level-right">
+            <button class="button is-small" id="theme-toggle"><span class="icon"><i class="fas fa-moon"></i></span></button>
+        </div>
+    </div>
+    <div class="columns" id="main-columns">
+        <div class="column" id="left-column" style="flex:0 0 30%;max-width:30%">
             <div class="field">
                 <div class="control">
                     <button class="button is-primary" id="upload-btn">
@@ -34,9 +39,15 @@
                 </div>
             </div>
         </div>
-        <div class="column is-half" id="ioc-columns"></div>
+        <div class="column" id="ioc-columns" style="flex:0 0 70%;max-width:70%"></div>
     </div>
 </div>
+
+<style>
+body.dark { background-color:#222; color:#f5f5f5; }
+body.dark .box { background-color:#2b2b2b; color:#f5f5f5; }
+body.dark .textarea { background-color:#2b2b2b; color:#f5f5f5; }
+</style>
 
 <script>
 let parsedData = {};
@@ -143,10 +154,23 @@ function poll(id, statusElem){
             if(mal > 0) statusElem.dataset.malicious = 'true';
             statusElem.innerHTML = `<span class="icon has-text-success"><i class="fas fa-check"></i></span> rep ${data.result.reputation}, ${mal}/${total} detections${tags}`;
         }else if(data.status === 'error'){
-            statusElem.innerHTML = `<span class="icon has-text-danger"><i class="fas fa-exclamation-triangle"></i></span> error`;
+            statusElem.innerHTML = `<span class="icon has-text-danger"><i class="fas fa-exclamation-triangle"></i></span> ${data.error || 'error'}`;
         }
     });
 }
+
+const toggle = document.getElementById('theme-toggle');
+toggle.addEventListener('click', () => {
+    document.body.classList.toggle('dark');
+    const icon = toggle.querySelector('i');
+    if(document.body.classList.contains('dark')){
+        icon.classList.remove('fa-moon');
+        icon.classList.add('fa-sun');
+    } else {
+        icon.classList.remove('fa-sun');
+        icon.classList.add('fa-moon');
+    }
+});
 </script>
 </body>
 </html>
