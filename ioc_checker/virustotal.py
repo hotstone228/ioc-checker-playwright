@@ -58,6 +58,8 @@ async def fetch_ioc_info(ioc: str, context: BrowserContext) -> Dict[str, Any]:
     api_url = f"https://www.virustotal.com/ui/{api_seg}/{ioc}?relationships=*"
 
     page = await context.new_page()
+    page.set_default_navigation_timeout(10_000)
+    page.set_default_timeout(10_000)
     async with page.expect_response(lambda r: r.url.startswith(api_url)) as resp_info:
         await page.goto(gui_url, wait_until=settings.wait_until)
     response = await resp_info.value
