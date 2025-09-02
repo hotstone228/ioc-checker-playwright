@@ -9,20 +9,45 @@
         html, body {
             height: 100%;
         }
-        #app-columns {
-            height: 100vh;
+
+        body {
+            padding: 1rem;
         }
+
+        #app-columns {
+            height: calc(100vh - 2rem);
+        }
+
         #input-column {
             flex: 0 0 30%;
             max-width: 30%;
             padding: 1rem;
             overflow-y: auto;
+            background-color: #1e1e1e;
+            border-right: 1px solid #2e2e2e;
         }
+
         #ioc-columns {
             flex: 0 0 70%;
             max-width: 70%;
             padding: 1rem;
             overflow-y: auto;
+            background-color: #181818;
+        }
+
+        textarea.textarea {
+            background-color: #2b2b2b;
+            color: #f5f5f5;
+            border-color: #444;
+        }
+
+        textarea.textarea:focus {
+            border-color: #7957d5;
+            box-shadow: 0 0 0 0.125em rgba(121, 87, 213, 0.25);
+        }
+
+        textarea.textarea::placeholder {
+            color: #7a7a7a;
         }
     </style>
 </head>
