@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>IOC Checker</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.2/axios.min.js"></script>
+</head>
+<body class="p-4">
+<section class="section">
+  <div class="container">
+    <h1 class="title">IOC Checker</h1>
+    <div class="field">
+      <div class="control">
+        <input id="file-input" class="input" type="file">
+      </div>
+    </div>
+    <div class="field">
+      <div class="control">
+        <textarea id="ioc-input" class="textarea" placeholder="Paste IOCs here"></textarea>
+      </div>
+    </div>
+    <div class="field is-grouped">
+      <p class="control"><button id="scan-all" class="button is-primary">Scan all</button></p>
+      <p class="control"><button id="copy-malicious" class="button">Copy malicious</button></p>
+    </div>
+    <div id="parsed-iocs" class="columns is-multiline"></div>
+  </div>
+</section>
+<script>
+const input = document.getElementById('ioc-input');
+const fileInput = document.getElementById('file-input');
+const parsedDiv = document.getElementById('parsed-iocs');
+const scanAllBtn = document.getElementById('scan-all');
+const copyBtn = document.getElementById('copy-malicious');
+let parsed = {};
+
+async function parse(text) {
+  const res = await fetch('/parse', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({text})
+  });
+  parsed = await res.json();
+  renderParsed();
+}
+
+function renderParsed() {
+  parsedDiv.innerHTML = '';
+  for (const [kind, values] of Object.entries(parsed)) {
+    const column = document.createElement('div');
+    column.className = 'column is-one-third';
+    const box = document.createElement('div');
+    box.className = 'box';
+    const title = document.createElement('h2');
+    title.className = 'title is-5';
+    title.textContent = kind.toUpperCase();
+    box.appendChild(title);
+    values.forEach(value => {
+      const level = document.createElement('div');
+      level.className = 'level is-mobile';
+      level.innerHTML = `
+        <div class="level-left">
+          <a href="https://www.virustotal.com/gui/${kind === 'ip' ? 'ip-address' : kind === 'domain' ? 'domain' : 'file'}/${value}" target="_blank">${value}</a>
+        </div>
+        <div class="level-right">
+          <button class="button is-small is-info" data-ioc="${value}">Scan</button>
+          <span class="tag ml-2" data-result="${value}"></span>
+        </div>`;
+      box.appendChild(level);
+    });
+    column.appendChild(box);
+    parsedDiv.appendChild(column);
+  }
+}
+
+input.addEventListener('input', e => parse(e.target.value));
+
+fileInput.addEventListener('change', async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const form = new FormData();
+  form.append('file', file);
+  const res = await fetch('/parse-file', {method:'POST', body:form});
+  parsed = await res.json();
+  renderParsed();
+});
+
+parsedDiv.addEventListener('click', async e => {
+  if (e.target.matches('button[data-ioc]')) {
+    const ioc = e.target.getAttribute('data-ioc');
+    const {tasks} = await (await fetch('/scan', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({iocs:[ioc], service:'virustotal'})})).json();
+    const id = tasks[0].id;
+    const tag = document.querySelector(`span[data-result="${ioc}"]`);
+    tag.className = 'tag is-warning';
+    tag.textContent = 'queued';
+    const poll = setInterval(async () => {
+      const status = await (await fetch(`/status/${id}`)).json();
+      if (status.status === 'done') {
+        clearInterval(poll);
+        tag.className = 'tag is-success';
+        tag.textContent = `rep ${status.result.reputation}`;
+      } else if (status.status === 'error') {
+        clearInterval(poll);
+        tag.className = 'tag is-danger';
+        tag.textContent = 'error';
+      }
+    }, 1000);
+  }
+});
+
+scanAllBtn.addEventListener('click', async () => {
+  const all = Object.values(parsed).flat();
+  if (!all.length) return;
+  const {tasks} = await (await fetch('/scan', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({iocs:all, service:'virustotal'})})).json();
+  tasks.forEach(({id, ioc}) => {
+    const tag = document.querySelector(`span[data-result="${ioc}"]`);
+    tag.className = 'tag is-warning';
+    tag.textContent = 'queued';
+    const poll = setInterval(async () => {
+      const status = await (await fetch(`/status/${id}`)).json();
+      if (status.status === 'done') {
+        clearInterval(poll);
+        tag.className = 'tag is-success';
+        tag.textContent = `rep ${status.result.reputation}`;
+      } else if (status.status === 'error') {
+        clearInterval(poll);
+        tag.className = 'tag is-danger';
+        tag.textContent = 'error';
+      }
+    }, 1000);
+  });
+});
+
+copyBtn.addEventListener('click', () => {
+  const malicious = [];
+  document.querySelectorAll('span.tag.is-danger').forEach(tag => {
+    malicious.push(tag.getAttribute('data-result'));
+  });
+  navigator.clipboard.writeText(malicious.join('\n'));
+});
+</script>
+</body>
+</html>
