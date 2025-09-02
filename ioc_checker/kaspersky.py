@@ -44,14 +44,12 @@ async def get_context() -> AsyncIterator[httpx.AsyncClient]:
         yield client
 
 def _parse_body(resp: httpx.Response) -> Optional[Any]:
-    ctype = resp.headers.get("content-type", "")
-    if "application/json" in ctype:
-        try:
-            return resp.json()
-        except Exception:  # pragma: no cover - defensive
-            return None
-    text = resp.text.strip()
-    return text or None
+    """Attempt to decode the response body as JSON and fallback to plain text."""
+    try:
+        return resp.json()
+    except Exception:  # pragma: no cover - defensive
+        text = resp.text.strip()
+        return text or None
 
 
 def _handle_response(resp: httpx.Response) -> Dict[str, Any]:
@@ -137,7 +135,7 @@ def _parse_file(data: Dict[str, Any]) -> Dict[str, Any]:
 async def lookup_hash(value: str, client: httpx.AsyncClient) -> Dict[str, Any]:
     resp = await client.get("/search/hash", params={"request": value})
     result = _handle_response(resp)
-    if "data" in result and result["data"]:
+    if isinstance(result.get("data"), dict):
         result["data"] = _parse_hash(result["data"])
     return result
 
@@ -145,7 +143,7 @@ async def lookup_hash(value: str, client: httpx.AsyncClient) -> Dict[str, Any]:
 async def lookup_ip(value: str, client: httpx.AsyncClient) -> Dict[str, Any]:
     resp = await client.get("/search/ip", params={"request": value})
     result = _handle_response(resp)
-    if "data" in result and result["data"]:
+    if isinstance(result.get("data"), dict):
         result["data"] = _parse_ip(result["data"])
     return result
 
@@ -153,7 +151,7 @@ async def lookup_ip(value: str, client: httpx.AsyncClient) -> Dict[str, Any]:
 async def lookup_domain(value: str, client: httpx.AsyncClient) -> Dict[str, Any]:
     resp = await client.get("/search/domain", params={"request": value})
     result = _handle_response(resp)
-    if "data" in result and result["data"]:
+    if isinstance(result.get("data"), dict):
         result["data"] = _parse_domain(result["data"])
     return result
 
@@ -161,7 +159,7 @@ async def lookup_domain(value: str, client: httpx.AsyncClient) -> Dict[str, Any]
 async def lookup_url(value: str, client: httpx.AsyncClient) -> Dict[str, Any]:
     resp = await client.get("/search/url", params={"request": value})
     result = _handle_response(resp)
-    if "data" in result and result["data"]:
+    if isinstance(result.get("data"), dict):
         result["data"] = _parse_url(result["data"])
     return result
 
@@ -170,7 +168,7 @@ async def submit_file(data: bytes, filename: str, client: httpx.AsyncClient) -> 
     files = {"file": (filename, data)}
     resp = await client.post("/scan/file", files=files)
     result = _handle_response(resp)
-    if "data" in result and result["data"]:
+    if isinstance(result.get("data"), dict):
         result["data"] = _parse_file(result["data"])
     return result
 
@@ -178,7 +176,7 @@ async def submit_file(data: bytes, filename: str, client: httpx.AsyncClient) -> 
 async def get_file_report(task_id: str, client: httpx.AsyncClient) -> Dict[str, Any]:
     resp = await client.get("/getresult/file", params={"task_id": task_id})
     result = _handle_response(resp)
-    if "data" in result and result["data"]:
+    if isinstance(result.get("data"), dict):
         result["data"] = _parse_file(result["data"])
     return result
 
