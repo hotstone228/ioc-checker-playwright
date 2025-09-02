@@ -3,7 +3,7 @@ from typing import Any, Dict
 from collections.abc import AsyncIterator
 import logging
 
-from playwright.async_api import async_playwright, BrowserContext
+from playwright.async_api import async_playwright, BrowserContext, Error
 from iocparser import IOCParser
 
 from .config import settings
@@ -52,10 +52,41 @@ async def fetch_ioc_info(ioc: str, context: BrowserContext) -> Dict[str, Any]:
     api_url = f"https://www.virustotal.com/ui/{api_seg}/{ioc}?relationships=*"
 
     page = await context.new_page()
-    async with page.expect_response(lambda r: r.url.startswith(api_url)) as resp_info:
-        await page.goto(gui_url, wait_until="networkidle")
-    response = await resp_info.value
-    data = (await response.json())["data"]["attributes"]
+    await page.goto(gui_url, wait_until=settings.wait_until)
+
+    # detect "Item not found" or empty results pages
+    not_found = await page.evaluate(
+        """
+        () => {
+            const root = document.querySelector('#view-container');
+            if (!root) return false;
+            if (root.querySelector('custom-error-view')) return true;
+            const limited = root.querySelector('limited-search-view');
+            if (limited && limited.shadowRoot && limited.shadowRoot.querySelector('vt-ui-special-states')) {
+                return true;
+            }
+            return false;
+        }
+        """
+    )
+    if not_found:
+        await page.close()
+        raise ValueError("IOC not found")
+
+    try:
+        response = await page.request.get(api_url)
+    except Error as exc:
+        await page.close()
+        raise ValueError("Network error while fetching IOC") from exc
+    if response.status == 404:
+        await page.close()
+        raise ValueError("IOC not found")
+
+    json_data = await response.json()
+    if "data" not in json_data:
+        await page.close()
+        raise ValueError("IOC not found")
+    data = json_data["data"]["attributes"]
     await page.close()
 
     result: Dict[str, Any] = {
