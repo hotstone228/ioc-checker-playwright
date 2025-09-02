@@ -58,10 +58,9 @@ async def fetch_ioc_info(ioc: str, context: BrowserContext) -> Dict[str, Any]:
     api_url = f"https://www.virustotal.com/ui/{api_seg}/{ioc}?relationships=*"
 
     page = await context.new_page()
-    async with page.expect_response(lambda r: r.url.startswith(api_url)) as resp_info:
-        await page.goto(gui_url, wait_until=settings.wait_until)
-    response = await resp_info.value
-    if not response.ok:
+    await page.goto(gui_url, wait_until=settings.wait_until)
+    response = await context.request.get(api_url)
+    if response.status != 200:
         await page.close()
         raise ValueError(f"IOC {ioc} not found")
     try:
@@ -69,6 +68,13 @@ async def fetch_ioc_info(ioc: str, context: BrowserContext) -> Dict[str, Any]:
     except Exception as exc:  # noqa: BLE001
         await page.close()
         raise ValueError(f"IOC {ioc} not found") from exc
+
+    # Some nonexistent IOCs redirect to a generic search page with an
+    # "Item not found" message but still return 200 from the API. Detect
+    # this by looking for the message in the GUI page.
+    if "Item not found" in await page.content():
+        await page.close()
+        raise ValueError(f"IOC {ioc} not found")
 
     tags: list[str] = []
     view_tag, card_tag = TAG_PATHS.get(ioc_type, (None, None))
