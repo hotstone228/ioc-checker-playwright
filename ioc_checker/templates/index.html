@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <title>IOC Checker</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="section">
 <div class="container">
@@ -85,7 +86,7 @@ async function submitScans(){
     data.tasks.forEach(t => {
         const div = document.createElement('div');
         div.id = 'task-' + t.id;
-        div.textContent = `${t.ioc} : queued`;
+        div.innerHTML = `<span class="icon"><i class="fas fa-spinner fa-spin"></i></span> ${t.ioc} : queued`;
         container.appendChild(div);
         poll(t.id, div);
     });
@@ -94,9 +95,17 @@ async function poll(id, element){
     const res = await fetch(`/status/${id}`);
     const data = await res.json();
     if(data.status){
-        element.textContent = `${data.ioc} : ${data.status}${data.result ? ' => ' + JSON.stringify(data.result): ''}`;
         if(data.status === 'queued' || data.status === 'processing'){
+            element.innerHTML = `<span class="icon"><i class="fas fa-spinner fa-spin"></i></span> ${data.ioc} : ${data.status}`;
             setTimeout(()=>poll(id, element), 1000);
+        } else if(data.status === 'done'){
+            const stats = data.result.last_analysis_stats || {};
+            const total = Object.values(stats).reduce((a,b)=>a+b,0);
+            const malicious = stats.malicious || 0;
+            const tags = data.result.tags && data.result.tags.length ? ` <span class="icon"><i class="fas fa-tags"></i></span> ${data.result.tags.join(', ')}` : '';
+            element.innerHTML = `<span class="icon has-text-success"><i class="fas fa-check"></i></span> ${data.ioc} : rep ${data.result.reputation}, ${malicious}/${total} detections${tags}`;
+        } else if(data.status === 'error'){
+            element.innerHTML = `<span class="icon has-text-danger"><i class="fas fa-exclamation-triangle"></i></span> ${data.ioc} : error ${data.error}`;
         }
     }
 }

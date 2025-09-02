@@ -21,6 +21,8 @@ starting Hypercorn so that Playwright can spawn browser subprocesses.
 
 Open <http://localhost:8000> and paste any text containing IOCs. The interface parses the text into categories (IP addresses, domains, hashes, etc.) and lets you submit them for checking. Each IOC is queued and processed by Playwright workers with live status updates.
 
+Results are rendered inline with icons and a concise summary of VirusTotal reputation, detection counts, and any tags associated with the IOC.
+
 ### Configuration
 
 Runtime options live in `config.toml`:
@@ -28,8 +30,8 @@ Runtime options live in `config.toml`:
 ```toml
 worker_count = 2        # number of Playwright workers
 headless = false        # show browser windows for debugging
-log_level = "INFO"      # logging verbosity
-wait_until = "networkidle" # page load milestone for VirusTotal navigation
+log_level = "DEBUG"     # logging verbosity
+wait_until = "domcontentloaded" # page load milestone for VirusTotal navigation
 ```
 
 Adjust these values to change worker pool size, toggle headless mode, or modify log levels for all services. `wait_until` accepts

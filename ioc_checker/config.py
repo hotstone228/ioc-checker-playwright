@@ -9,8 +9,8 @@ from typing import Literal
 class Settings:
     worker_count: int = 2
     headless: bool = False
-    log_level: str = "INFO"
-    wait_until: Literal["commit", "domcontentloaded", "load", "networkidle"] = "networkidle"
+    log_level: str = "DEBUG"
+    wait_until: Literal["commit", "domcontentloaded", "load", "networkidle"] = "domcontentloaded"
 
 
 def load_settings() -> Settings:
