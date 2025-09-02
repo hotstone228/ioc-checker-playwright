@@ -3,39 +3,57 @@
 <head>
     <meta charset="utf-8" />
     <title>IOC Checker</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulmaswatch@0.9.4/darkly/bulmaswatch.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        html, body {
+            height: 100%;
+        }
+        #app-columns {
+            height: 100vh;
+        }
+        #input-column {
+            flex: 0 0 30%;
+            max-width: 30%;
+            padding: 1rem;
+            overflow-y: auto;
+        }
+        #ioc-columns {
+            flex: 0 0 70%;
+            max-width: 70%;
+            padding: 1rem;
+            overflow-y: auto;
+        }
+    </style>
 </head>
-<body class="section">
-<div class="container">
-    <h1 class="title">IOC Checker</h1>
-    <div class="columns">
-        <div class="column is-half">
-            <div class="field">
-                <div class="control">
-                    <button class="button is-primary" id="upload-btn">
-                        <span class="icon"><i class="fas fa-upload"></i></span>
-                        <span>Upload file</span>
-                    </button>
-                    <input class="is-hidden" type="file" id="file-input" accept=".txt,.log,.csv,.json">
-                </div>
-            </div>
-            <div class="field">
-                <div class="control">
-                    <textarea id="raw-input" class="textarea" placeholder="Paste text containing IOCs"></textarea>
-                </div>
-            </div>
-            <div class="field is-grouped">
-                <div class="control">
-                    <button class="button is-link" id="scan-all">Scan all</button>
-                </div>
-                <div class="control">
-                    <button class="button" id="copy-malicious">Copy malicious</button>
-                </div>
+<body class="has-background-dark has-text-light">
+<div class="columns is-gapless" id="app-columns">
+    <div class="column" id="input-column">
+        <h1 class="title has-text-light">IOC Checker</h1>
+        <div class="field">
+            <div class="control">
+                <button class="button is-primary" id="upload-btn">
+                    <span class="icon"><i class="fas fa-upload"></i></span>
+                    <span>Upload file</span>
+                </button>
+                <input class="is-hidden" type="file" id="file-input" accept=".txt,.log,.csv,.json">
             </div>
         </div>
-        <div class="column is-half" id="ioc-columns"></div>
+        <div class="field">
+            <div class="control">
+                <textarea id="raw-input" class="textarea" placeholder="Paste text containing IOCs"></textarea>
+            </div>
+        </div>
+        <div class="field is-grouped">
+            <div class="control">
+                <button class="button is-link" id="scan-all">Scan all</button>
+            </div>
+            <div class="control">
+                <button class="button" id="copy-malicious">Copy malicious</button>
+            </div>
+        </div>
     </div>
+    <div class="column" id="ioc-columns"></div>
 </div>
 
 <script>
