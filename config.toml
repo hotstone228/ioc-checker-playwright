@@ -1,4 +1,4 @@
-worker_count = 2
+worker_count = 1
 headless = false
 log_level = "DEBUG"
 wait_until = "domcontentloaded"
