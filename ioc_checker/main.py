@@ -22,6 +22,16 @@ from .config import settings
 
 logger = logging.getLogger(__name__)
 
+KIND_MAP = {
+    "ip": "ipv4",
+    "ipv4": "ipv4",
+    "uri": "fqdn",
+    "fqdn": "fqdn",
+    "md5": "md5",
+    "sha1": "sha1",
+    "sha256": "sha256",
+}
+
 
 class ScanRequest(BaseModel):
     iocs: list[str]
@@ -57,7 +67,10 @@ async def parse_iocs(req: ParseRequest) -> dict[str, list[str]]:
     result: dict[str, list[str]] = {}
     for item in parsed:
         key = item.kind.lower()
-        result.setdefault(key, []).append(item.value)
+        norm = KIND_MAP.get(key)
+        if not norm:
+            continue
+        result.setdefault(norm, []).append(item.value)
     return result
 
 
@@ -77,7 +90,10 @@ async def parse_file(file: UploadFile = File(...)) -> dict[str, list[str]]:
     result: dict[str, list[str]] = {}
     for item in parsed:
         key = item.kind.lower()
-        result.setdefault(key, []).append(item.value)
+        norm = KIND_MAP.get(key)
+        if not norm:
+            continue
+        result.setdefault(norm, []).append(item.value)
     return result
 
 

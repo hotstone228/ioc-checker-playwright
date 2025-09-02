@@ -19,7 +19,7 @@ python run.py
 The entry script `run.py` configures the Proactor event loop on Windows before
 starting Hypercorn so that Playwright can spawn browser subprocesses.
 
-Open <http://localhost:8000> and paste any text containing IOCs. The interface parses the text into categories (IP addresses, domains, hashes, etc.) and lets you submit them for checking. Each IOC is queued and processed by Playwright workers with live status updates.
+Open <http://localhost:8000> and paste any text containing IOCs. The left pane auto-parses as you type (or after uploading a file) and the right pane groups supported IOCs (IPv4, FQDN, hashes). Each group provides its own **Scan** button, or use **Scan all** to submit everything. Scan results appear inline next to each IOC with icons and tags, and **Copy malicious** copies all detected malicious IOCs to your clipboard.
 
 Results are rendered inline with icons and a concise summary of VirusTotal reputation, detection counts, and any tags associated with the IOC.
 

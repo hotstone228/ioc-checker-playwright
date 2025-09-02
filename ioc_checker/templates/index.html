@@ -9,105 +9,143 @@
 <body class="section">
 <div class="container">
     <h1 class="title">IOC Checker</h1>
-    <textarea id="raw-input" class="textarea" placeholder="Paste text containing IOCs"></textarea>
-    <button class="button is-primary mt-2" onclick="parseIOCs()">Parse</button>
-    <div class="file has-name mt-4">
-        <label class="file-label">
-            <input class="file-input" type="file" id="file-input" accept=".txt,.log,.csv,.json">
-            <span class="file-cta">
-                <span class="file-label">Choose a file…</span>
-            </span>
-            <span class="file-name" id="file-name"></span>
-        </label>
+    <div class="columns">
+        <div class="column is-half">
+            <div class="field">
+                <div class="control">
+                    <button class="button is-primary" id="upload-btn">
+                        <span class="icon"><i class="fas fa-upload"></i></span>
+                        <span>Upload file</span>
+                    </button>
+                    <input class="is-hidden" type="file" id="file-input" accept=".txt,.log,.csv,.json">
+                </div>
+            </div>
+            <div class="field">
+                <div class="control">
+                    <textarea id="raw-input" class="textarea" placeholder="Paste text containing IOCs"></textarea>
+                </div>
+            </div>
+            <div class="field is-grouped">
+                <div class="control">
+                    <button class="button is-link" id="scan-all">Scan all</button>
+                </div>
+                <div class="control">
+                    <button class="button" id="copy-malicious">Copy malicious</button>
+                </div>
+            </div>
+        </div>
+        <div class="column is-half" id="ioc-columns"></div>
     </div>
-    <button class="button is-primary mt-2" onclick="parseFile()">Parse File</button>
-    <div id="parsed" class="columns mt-4"></div>
-    <button class="button is-link mt-2" onclick="submitScans()">Scan Parsed IOCs</button>
-    <div id="results" class="mt-4"></div>
 </div>
+
 <script>
-function displayParsed(data){
-    const container = document.getElementById('parsed');
-    container.innerHTML = '';
-    Object.keys(data).forEach(key => {
-        const col = document.createElement('div');
-        col.className = 'column';
-        const label = document.createElement('label');
-        label.className = 'label';
-        label.textContent = key;
-        const ta = document.createElement('textarea');
-        ta.id = 'parsed-' + key;
-        ta.className = 'textarea';
-        ta.value = data[key].join('\n');
-        col.appendChild(label);
-        col.appendChild(ta);
-        container.appendChild(col);
-    });
-}
+let parsedData = {};
 
-async function parseIOCs(){
-    const raw = document.getElementById('raw-input').value;
-    const res = await fetch('/parse', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({text: raw})});
-    const data = await res.json();
-    displayParsed(data);
-}
-
-async function parseFile(){
-    const fileInput = document.getElementById('file-input');
-    if(!fileInput.files.length) return;
+const fileInput = document.getElementById('file-input');
+document.getElementById('upload-btn').addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => {
+    if (!fileInput.files.length) return;
     const formData = new FormData();
     formData.append('file', fileInput.files[0]);
-    const res = await fetch('/parse-file', {method:'POST', body: formData});
-    const data = await res.json();
-    displayParsed(data);
+    fetch('/parse-file', {method:'POST', body: formData})
+        .then(r => r.json())
+        .then(data => { parsedData = data; renderParsed(); });
+});
+
+let debounceTimer;
+document.getElementById('raw-input').addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+        const text = document.getElementById('raw-input').value;
+        fetch('/parse', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({text})})
+            .then(r => r.json())
+            .then(data => { parsedData = data; renderParsed(); });
+    }, 300);
+});
+
+function renderParsed(){
+    const container = document.getElementById('ioc-columns');
+    container.innerHTML = '';
+    Object.entries(parsedData).forEach(([kind, values]) => {
+        if(!['ipv4','fqdn','md5','sha1','sha256'].includes(kind)) return;
+        const box = document.createElement('div');
+        box.className = 'box';
+        const title = document.createElement('h3');
+        title.className = 'subtitle';
+        title.textContent = kind;
+        box.appendChild(title);
+        const list = document.createElement('div');
+        values.forEach(val => {
+            const item = document.createElement('div');
+            item.className = 'ioc-item';
+            const link = document.createElement('a');
+            link.href = vtLink(kind,val);
+            link.target = '_blank';
+            link.textContent = val;
+            item.appendChild(link);
+            const status = document.createElement('span');
+            status.className = 'status ml-2';
+            item.appendChild(status);
+            list.appendChild(item);
+        });
+        box.appendChild(list);
+        const btn = document.createElement('button');
+        btn.className = 'button is-small is-link mt-2';
+        btn.textContent = 'Scan';
+        btn.addEventListener('click', () => scan(values));
+        box.appendChild(btn);
+        container.appendChild(box);
+    });
 }
 
-document.getElementById('file-input').addEventListener('change', () => {
-    const fileInput = document.getElementById('file-input');
-    const fileName = document.getElementById('file-name');
-    if(fileInput.files.length){
-        fileName.textContent = fileInput.files[0].name;
-    } else {
-        fileName.textContent = '';
-    }
-});
-async function submitScans(){
-    const areas = document.querySelectorAll('[id^="parsed-"]');
-    let iocs = [];
-    areas.forEach(a => {
-        const vals = a.value.trim().split(/\n+/).filter(Boolean);
-        iocs = iocs.concat(vals);
-    });
-    if(!iocs.length) return;
-    const res = await fetch('/scan', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({service: 'virustotal', iocs})});
-    const data = await res.json();
-    const container = document.getElementById('results');
-    container.innerHTML = '';
-    data.tasks.forEach(t => {
-        const div = document.createElement('div');
-        div.id = 'task-' + t.id;
-        div.innerHTML = `<span class="icon"><i class="fas fa-spinner fa-spin"></i></span> ${t.ioc} : queued`;
-        container.appendChild(div);
-        poll(t.id, div);
-    });
+function vtLink(kind, value){
+    if(kind === 'ipv4') return `https://www.virustotal.com/gui/ip-address/${value}`;
+    if(kind === 'fqdn') return `https://www.virustotal.com/gui/domain/${value}`;
+    return `https://www.virustotal.com/gui/file/${value}`;
 }
-async function poll(id, element){
-    const res = await fetch(`/status/${id}`);
-    const data = await res.json();
-    if(data.status){
+
+function scan(iocs){
+    if(!iocs.length) return;
+    fetch('/scan', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({service:'virustotal', iocs})})
+        .then(r => r.json())
+        .then(data => {
+            data.tasks.forEach(t => {
+                const elem = [...document.querySelectorAll('.ioc-item')].find(div => div.firstChild.textContent === t.ioc);
+                if(elem) poll(t.id, elem.querySelector('.status'));
+            });
+        });
+}
+
+document.getElementById('scan-all').addEventListener('click', () => {
+    const all = [];
+    Object.entries(parsedData).forEach(([kind, vals]) => {
+        if(['ipv4','fqdn','md5','sha1','sha256'].includes(kind)) all.push(...vals);
+    });
+    scan(all);
+});
+
+document.getElementById('copy-malicious').addEventListener('click', () => {
+    const mal = [...document.querySelectorAll('.status[data-malicious="true"]')]
+        .map(s => s.parentElement.querySelector('a').textContent);
+    if(mal.length) navigator.clipboard.writeText(mal.join('\n'));
+});
+
+function poll(id, statusElem){
+    fetch(`/status/${id}`).then(r => r.json()).then(data => {
         if(data.status === 'queued' || data.status === 'processing'){
-            element.innerHTML = `<span class="icon"><i class="fas fa-spinner fa-spin"></i></span> ${data.ioc} : ${data.status}`;
-            setTimeout(()=>poll(id, element), 1000);
-        } else if(data.status === 'done'){
+            statusElem.innerHTML = '<span class="icon"><i class="fas fa-spinner fa-spin"></i></span>';
+            setTimeout(() => poll(id, statusElem), 1000);
+        }else if(data.status === 'done'){
             const stats = data.result.last_analysis_stats || {};
             const total = Object.values(stats).reduce((a,b)=>a+b,0);
-            const malicious = stats.malicious || 0;
+            const mal = stats.malicious || 0;
             const tags = data.result.tags && data.result.tags.length ? ` <span class="icon"><i class="fas fa-tags"></i></span> ${data.result.tags.join(', ')}` : '';
-            element.innerHTML = `<span class="icon has-text-success"><i class="fas fa-check"></i></span> ${data.ioc} : rep ${data.result.reputation}, ${malicious}/${total} detections${tags}`;
-        } else if(data.status === 'error'){
-            element.innerHTML = `<span class="icon has-text-danger"><i class="fas fa-exclamation-triangle"></i></span> ${data.ioc} : error ${data.error}`;
+            if(mal > 0) statusElem.dataset.malicious = 'true';
+            statusElem.innerHTML = `<span class="icon has-text-success"><i class="fas fa-check"></i></span> rep ${data.result.reputation}, ${mal}/${total} detections${tags}`;
+        }else if(data.status === 'error'){
+            statusElem.innerHTML = `<span class="icon has-text-danger"><i class="fas fa-exclamation-triangle"></i></span> error`;
         }
-    }
+    });
 }
 </script>
 </body>
