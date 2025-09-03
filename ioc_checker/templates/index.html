@@ -242,9 +242,13 @@ function poll(id, statusElem, resultElem){
                 if(res.status) text += `, status ${res.status}`;
                 if(typeof res.hits_count === 'number') text += `, hits ${res.hits_count}`;
                 if(res.categories && res.categories.length) text += `, categories ${res.categories.join(', ')}`;
-                if(res.zone && res.zone.toLowerCase() !== 'green') statusElem.dataset.malicious = 'true';
+                const zone = (res.zone || '').toLowerCase();
+                const valueElem = statusElem.parentElement.querySelector('.ioc-value');
+                const zoneColors = {green:'#4caf50', yellow:'#f1c40f', red:'#e74c3c', grey:'#95a5a6'};
+                if(valueElem && zoneColors[zone]) valueElem.style.color = zoneColors[zone];
+                if(zone && zone !== 'green') statusElem.dataset.malicious = 'true';
                 statusElem.innerHTML = '<i class="fas fa-check"></i>';
-                statusElem.style.color = '#4caf50';
+                statusElem.style.color = zoneColors[zone] || '#4caf50';
                 resultElem.textContent = text;
             }else{
                 statusElem.innerHTML = '<i class="fas fa-times"></i>';
