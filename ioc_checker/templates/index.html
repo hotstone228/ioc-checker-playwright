@@ -3,95 +3,114 @@
 <head>
     <meta charset="utf-8" />
     <title>IOC Checker</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulmaswatch@0.8.1/darkly/bulmaswatch.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         html, body {
             height: 100%;
+            margin: 0;
         }
 
         body {
-            padding: 1rem;
-        }
-
-        #app-columns {
-            height: calc(100vh - 2rem);
+            display: flex;
+            background: #121212;
+            color: #eee;
+            font-family: Arial, sans-serif;
         }
 
         #input-column {
-            flex: 0 0 30%;
-            max-width: 30%;
+            width: 30%;
             padding: 1rem;
+            box-sizing: border-box;
+            border-right: 1px solid #333;
             overflow-y: auto;
-            background-color: #1e1e1e;
-            border-right: 1px solid #2e2e2e;
         }
 
         #ioc-columns {
-            flex: 0 0 70%;
-            max-width: 70%;
+            flex: 1;
             padding: 1rem;
+            box-sizing: border-box;
             overflow-y: auto;
-            background-color: #181818;
         }
 
-        textarea.textarea {
-            background-color: #2b2b2b;
-            color: #f5f5f5;
-            border-color: #444;
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            background: #1e1e1e;
+            color: #eee;
+            border: 1px solid #333;
+            padding: 0.5rem;
+            box-sizing: border-box;
         }
 
-        textarea.textarea:focus {
-            border-color: #7957d5;
-            box-shadow: 0 0 0 0.125em rgba(121, 87, 213, 0.25);
+        button, select {
+            background: #333;
+            color: #eee;
+            border: 1px solid #555;
+            padding: 0.5rem;
+            cursor: pointer;
         }
 
-        textarea.textarea::placeholder {
-            color: #7a7a7a;
+        button {
+            margin-top: 0.5rem;
+        }
+
+        .ioc-item {
+            display: flex;
+            align-items: center;
+            padding: 4px 0;
+            border-bottom: 1px solid #222;
+        }
+
+        .ioc-item .status {
+            width: 20px;
+            text-align: center;
+            margin-right: 6px;
+            color: #999;
+        }
+
+        .ioc-item .ioc-value {
+            margin-right: 6px;
+        }
+
+        .ioc-item .links a {
+            margin-left: 4px;
+            color: #ccc;
+        }
+
+        .ioc-item .links a:hover {
+            color: #fff;
+        }
+
+        .ioc-item .result {
+            margin-left: auto;
+            font-size: 0.9em;
         }
     </style>
 </head>
-<body class="has-background-dark has-text-light">
-<div class="columns is-gapless" id="app-columns">
-    <div class="column" id="input-column">
-        <h1 class="title has-text-light">IOC Checker</h1>
-        <div class="field">
-            <div class="control">
-                <button class="button is-primary" id="upload-btn">
-                    <span class="icon"><i class="fas fa-upload"></i></span>
-                    <span>Upload file</span>
-                </button>
-                <input class="is-hidden" type="file" id="file-input" accept=".txt,.log,.csv,.json">
-            </div>
-        </div>
-        <div class="field">
-            <div class="control">
-                <textarea id="raw-input" class="textarea" placeholder="Paste text containing IOCs"></textarea>
-            </div>
-        </div>
-        <div class="field">
-            <label class="label has-text-light">Provider</label>
-            <div class="control">
-                <div class="select is-fullwidth">
-                    <select id="provider">
-                        {% for p in providers %}
-                        <option value="{{p}}">{{p}}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </div>
-        </div>
-        <div class="field is-grouped">
-            <div class="control">
-                <button class="button is-link" id="scan-all">Scan all</button>
-            </div>
-            <div class="control">
-                <button class="button" id="copy-malicious">Copy malicious</button>
-            </div>
-        </div>
+<body>
+<div id="input-column">
+    <h1>IOC Checker</h1>
+    <div>
+        <button id="upload-btn"><i class="fas fa-upload"></i> Upload file</button>
+        <input type="file" id="file-input" accept=".txt,.log,.csv,.json" style="display:none">
     </div>
-    <div class="column" id="ioc-columns"></div>
+    <div>
+        <textarea id="raw-input" placeholder="Paste text containing IOCs"></textarea>
+    </div>
+    <div>
+        <label for="provider">Provider</label>
+        <select id="provider">
+            {% for p in providers %}
+            <option value="{{p}}">{{p}}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <button id="scan-all">Scan all</button>
+        <button id="copy-malicious">Copy malicious</button>
+    </div>
 </div>
+<div id="ioc-columns"></div>
 
 <script>
 let parsedData = {};
@@ -125,44 +144,55 @@ function renderParsed(){
     const container = document.getElementById('ioc-columns');
     container.innerHTML = '';
     Object.entries(parsedData).forEach(([kind, values]) => {
-        const box = document.createElement('div');
-        box.className = 'box';
+        const section = document.createElement('div');
         const title = document.createElement('h3');
-        title.className = 'subtitle';
         title.textContent = kind;
-        box.appendChild(title);
-        const list = document.createElement('div');
-        const provider = document.getElementById('provider').value;
+        section.appendChild(title);
         values.forEach(val => {
             const item = document.createElement('div');
             item.className = 'ioc-item';
-            const link = document.createElement('a');
-            link.href = iocLink(provider, kind, val);
-            link.target = '_blank';
-            link.textContent = val;
-            item.appendChild(link);
+            item.dataset.value = val;
+
             const status = document.createElement('span');
-            status.className = 'status ml-2';
+            status.className = 'status';
+            status.innerHTML = '<i class="fas fa-question"></i>';
             item.appendChild(status);
-            list.appendChild(item);
+
+            const valueSpan = document.createElement('span');
+            valueSpan.className = 'ioc-value';
+            valueSpan.textContent = val;
+            item.appendChild(valueSpan);
+
+            const links = document.createElement('span');
+            links.className = 'links';
+            const vt = document.createElement('a');
+            vt.href = `https://www.virustotal.com/gui/search/${encodeURIComponent(val)}`;
+            vt.target = '_blank';
+            vt.innerHTML = '<i class="fas fa-virus"></i>';
+            links.appendChild(vt);
+            if(SCANNABLE.includes(kind)){
+                const kas = document.createElement('a');
+                kas.href = `https://opentip.kaspersky.com/${val}`;
+                kas.target = '_blank';
+                kas.innerHTML = '<i class="fas fa-shield-halved"></i>';
+                links.appendChild(kas);
+            }
+            item.appendChild(links);
+
+            const result = document.createElement('span');
+            result.className = 'result';
+            item.appendChild(result);
+
+            section.appendChild(item);
         });
-        box.appendChild(list);
         if(SCANNABLE.includes(kind)){
             const btn = document.createElement('button');
-            btn.className = 'button is-small is-link mt-2';
             btn.textContent = 'Scan';
             btn.addEventListener('click', () => scan(values));
-            box.appendChild(btn);
+            section.appendChild(btn);
         }
-        container.appendChild(box);
+        container.appendChild(section);
     });
-}
-
-function iocLink(provider, kind, value){
-    if(provider === 'kaspersky' && SCANNABLE.includes(kind)){
-        return `https://opentip.kaspersky.com/${value}`;
-    }
-    return '#';
 }
 
 function scan(iocs){
@@ -172,8 +202,8 @@ function scan(iocs){
         .then(r => r.json())
         .then(data => {
             data.tasks.forEach(t => {
-                const elem = [...document.querySelectorAll('.ioc-item')].find(div => div.firstChild.textContent === t.ioc);
-                if(elem) poll(t.id, elem.querySelector('.status'));
+                const elem = [...document.querySelectorAll('.ioc-item')].find(div => div.dataset.value === t.ioc);
+                if(elem) poll(t.id, elem.querySelector('.status'), elem.querySelector('.result'));
             });
         });
 }
@@ -188,20 +218,23 @@ document.getElementById('scan-all').addEventListener('click', () => {
 
 document.getElementById('copy-malicious').addEventListener('click', () => {
     const mal = [...document.querySelectorAll('.status[data-malicious="true"]')]
-        .map(s => s.parentElement.querySelector('a').textContent);
+        .map(s => s.parentElement.querySelector('.ioc-value').textContent);
     if(mal.length) navigator.clipboard.writeText(mal.join('\n'));
 });
 
-function poll(id, statusElem){
+function poll(id, statusElem, resultElem){
     fetch(`/status/${id}`).then(r => r.json()).then(data => {
         if(data.status === 'queued' || data.status === 'processing'){
-            statusElem.innerHTML = '<span class="icon"><i class="fas fa-spinner fa-spin"></i></span>';
-            setTimeout(() => poll(id, statusElem), 1000);
+            statusElem.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            statusElem.style.color = '#999';
+            setTimeout(() => poll(id, statusElem, resultElem), 1000);
         }else if(data.status === 'done'){
             if(data.service === 'kaspersky'){
                 const info = data.result || {};
                 if(info.status_code !== 200){
-                    statusElem.innerHTML = `<span class="icon has-text-danger"><i class="fas fa-exclamation-triangle"></i></span> ${info.error || 'error'}`;
+                    statusElem.innerHTML = '<i class="fas fa-times"></i>';
+                    statusElem.style.color = '#e74c3c';
+                    resultElem.textContent = info.error || 'error';
                     return;
                 }
                 const res = info.data || {};
@@ -210,15 +243,22 @@ function poll(id, statusElem){
                 if(typeof res.hits_count === 'number') text += `, hits ${res.hits_count}`;
                 if(res.categories && res.categories.length) text += `, categories ${res.categories.join(', ')}`;
                 if(res.zone && res.zone.toLowerCase() !== 'green') statusElem.dataset.malicious = 'true';
-                statusElem.innerHTML = `<span class="icon has-text-success"><i class="fas fa-check"></i></span> ${text}`;
+                statusElem.innerHTML = '<i class="fas fa-check"></i>';
+                statusElem.style.color = '#4caf50';
+                resultElem.textContent = text;
             }else{
-                statusElem.innerHTML = `<span class="icon has-text-danger"><i class="fas fa-exclamation-triangle"></i></span> unsupported service`;
+                statusElem.innerHTML = '<i class="fas fa-times"></i>';
+                statusElem.style.color = '#e74c3c';
+                resultElem.textContent = 'unsupported service';
             }
         }else if(data.status === 'error'){
-            statusElem.innerHTML = `<span class="icon has-text-danger"><i class="fas fa-exclamation-triangle"></i></span> error`;
+            statusElem.innerHTML = '<i class="fas fa-times"></i>';
+            statusElem.style.color = '#e74c3c';
+            resultElem.textContent = 'error';
         }
     });
 }
 </script>
 </body>
 </html>
+
