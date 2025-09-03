@@ -238,7 +238,7 @@ function renderParsed(){
             const vt = document.createElement('a');
             vt.href = `https://www.virustotal.com/gui/search/${encodeURIComponent(val)}`;
             vt.target = '_blank';
-            vt.innerHTML = '<img src="https://www.virustotal.com/gui/images/favicon-32x32.png" alt="VT" width="16" height="16">';
+            vt.innerHTML = '<img src="https://www.virustotal.com/gui/images/favicon.png" alt="VT" width="16" height="16">';
             links.appendChild(vt);
             if(SCANNABLE.includes(kind)){
                 const kas = document.createElement('a');
