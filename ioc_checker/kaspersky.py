@@ -60,6 +60,9 @@ def _handle_response(resp: httpx.Response) -> Dict[str, Any]:
     if resp.status_code == 204:
         return {"status_code": 204, "data": None}
     message = ERROR_MAP.get(resp.status_code, resp.reason_phrase)
+    logger.error(
+        "Kaspersky API error %s: %s - %s", resp.status_code, message, body
+    )
     return {"status_code": resp.status_code, "error": message, "details": body}
 
 
@@ -71,7 +74,6 @@ def _parse_hash(data: Dict[str, Any]) -> Dict[str, Any]:
         "md5": data.get("Md5"),
         "sha256": data.get("Sha256"),
         "first_seen": data.get("FirstSeen"),
-        "last_seen": data.get("LastSeen"),
         "signer": data.get("Signer"),
         "general_info": data.get("FileGeneralInfo"),
     }
@@ -142,7 +144,7 @@ async def lookup_hash(value: str, client: httpx.AsyncClient) -> Dict[str, Any]:
 
 
 async def lookup_ip(value: str, client: httpx.AsyncClient) -> Dict[str, Any]:
-    resp = await client.get("/search/ip", params={"request": value})
+    resp = await client.get("/search/ip", params={"ip": value})
     result = _handle_response(resp)
     if isinstance(result.get("data"), dict):
         result["data"] = _parse_ip(result["data"])
@@ -193,5 +195,9 @@ async def fetch_ioc_info(ioc: str, client: httpx.AsyncClient) -> Dict[str, Any]:
         result = await lookup_url(ioc, client)
     else:
         result = await lookup_domain(ioc, client)
+    if result.get("status_code") != 200:
+        logger.warning(
+            "Lookup failed for %s: %s", ioc, result.get("error")
+        )
     result.update({"ioc": ioc, "type": ioc_type})
     return result

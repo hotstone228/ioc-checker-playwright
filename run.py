@@ -16,6 +16,10 @@ from ioc_checker.main import app
 logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO,
+        format="[%(levelname)s] %(name)s: %(message)s",
+    )
     config = Config()
     config.bind = ["127.0.0.1:8000"]
     config.use_reloader = True

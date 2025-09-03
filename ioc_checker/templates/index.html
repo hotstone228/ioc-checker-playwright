@@ -137,9 +137,9 @@ const RESULT_PARSERS = {
         const parts = [];
         if(res.zone) parts.push(`<span><i class="fas fa-shield-halved"></i> ${res.zone}</span>`);
 
-        Object.entries({files_count:'fa-file', urls_count:'fa-link', hits_count:'fa-bolt', ipv4_count:'fa-network-wired'}).forEach(([key, icon]) => {
+        Object.entries({files_count:'fa-file', urls_count:'fa-link', hits_count:'fa-bolt', ipv4_count:'fa-network-wired', first_seen:'fa-calendar-plus'}).forEach(([key, icon]) => {
             const val = res[key];
-            if(typeof val === 'number') parts.push(`<span><i class="fas ${icon}"></i> ${val}</span>`);
+            if(val !== undefined && val !== null) parts.push(`<span><i class="fas ${icon}"></i> ${short(val)}</span>`);
         });
 
         const iconMap = {
@@ -148,7 +148,6 @@ const RESULT_PARSERS = {
             Size: 'fa-weight-hanging',
             HitsCount: 'fa-bolt',
             FirstSeen: 'fa-calendar-plus',
-            LastSeen: 'fa-calendar-minus',
             Sha256: 'fa-fingerprint',
             Sha1: 'fa-fingerprint',
             Md5: 'fa-fingerprint',
@@ -158,7 +157,7 @@ const RESULT_PARSERS = {
         };
 
         const gen = res.general_info || {};
-        const skipKeys = new Set(['Domain','CategoriesWithZone','Sha1','Sha256','Md5','Sha512']);
+        const skipKeys = new Set(['Domain','CategoriesWithZone','Sha1','Sha256','Md5','Sha512','FirstSeen','LastSeen']);
         Object.entries(gen).forEach(([key, val]) => {
             if(val === null || skipKeys.has(key)) return;
             if(key === 'Categories' && Array.isArray(val) && val.length){
@@ -167,6 +166,10 @@ const RESULT_PARSERS = {
                     parts.push(`<span><i class="fas fa-tag"></i> ${short(cat)}</span>`);
                 });
                 return;
+            }
+            if(typeof val === 'number' && key === 'Size'){
+                const mb = (val / (1024*1024)).toFixed(2).replace('.', ',');
+                val = `${mb} Mb`;
             }
             if(typeof val === 'string' || typeof val === 'number'){
                 const icon = iconMap[key] || 'fa-circle';
