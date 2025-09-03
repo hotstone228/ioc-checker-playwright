@@ -133,29 +133,45 @@ const RESULT_PARSERS = {
         statusElem.innerHTML = '<i class="fas fa-check"></i>';
         statusElem.style.color = zoneColors[zone] || '#4caf50';
 
-        const gen = res.general_info || {};
-        const parts = [];
         const short = v => typeof v === 'string' && v.length > 30 ? v.slice(0,27) + '...' : v;
-        if(info.type === 'domain'){
-            if(res.zone) parts.push(`<span><i class="fas fa-shield-halved"></i> ${res.zone}</span>`);
-            if(typeof gen.Ipv4Count === 'number') parts.push(`<span><i class="fas fa-network-wired"></i> ${gen.Ipv4Count}</span>`);
-            if(Array.isArray(gen.Categories) && gen.Categories.length){
-                let cat = gen.Categories[0];
+        const parts = [];
+        if(res.zone) parts.push(`<span><i class="fas fa-shield-halved"></i> ${res.zone}</span>`);
+
+        Object.entries({files_count:'fa-file', urls_count:'fa-link', hits_count:'fa-bolt', ipv4_count:'fa-network-wired'}).forEach(([key, icon]) => {
+            const val = res[key];
+            if(typeof val === 'number') parts.push(`<span><i class="fas ${icon}"></i> ${val}</span>`);
+        });
+
+        const iconMap = {
+            FileStatus: 'fa-bug',
+            Type: 'fa-file',
+            Size: 'fa-weight-hanging',
+            HitsCount: 'fa-bolt',
+            FirstSeen: 'fa-calendar-plus',
+            LastSeen: 'fa-calendar-minus',
+            Sha256: 'fa-fingerprint',
+            Sha1: 'fa-fingerprint',
+            Md5: 'fa-fingerprint',
+            Ipv4Count: 'fa-network-wired',
+            UrlsCount: 'fa-link',
+            FilesCount: 'fa-file'
+        };
+
+        const gen = res.general_info || {};
+        Object.entries(gen).forEach(([key, val]) => {
+            if(val === null || key === 'Domain' || key === 'CategoriesWithZone') return;
+            if(key === 'Categories' && Array.isArray(val) && val.length){
+                let cat = val[0];
                 if(cat.includes('_')) cat = cat.split('_').slice(1).join(' ');
                 parts.push(`<span><i class="fas fa-tags"></i> ${short(cat)}</span>`);
+                return;
             }
-            resultElem.innerHTML = parts.join(' ');
-            return;
-        }
-        if(res.zone) parts.push(`<span><i class="fas fa-shield-halved"></i> ${res.zone}</span>`);
-        if(gen.FileStatus) parts.push(`<span><i class="fas fa-bug"></i> ${gen.FileStatus}</span>`);
-        if(gen.Type) parts.push(`<span><i class="fas fa-file"></i> ${gen.Type}</span>`);
-        if(typeof gen.Size === 'number') parts.push(`<span><i class="fas fa-weight-hanging"></i> ${gen.Size}</span>`);
-        if(typeof gen.HitsCount === 'number') parts.push(`<span><i class="fas fa-bolt"></i> ${gen.HitsCount}</span>`);
-        if(gen.FirstSeen) parts.push(`<span><i class="fas fa-calendar-plus"></i> ${gen.FirstSeen}</span>`);
-        if(gen.LastSeen) parts.push(`<span><i class="fas fa-calendar-minus"></i> ${gen.LastSeen}</span>`);
-        if(gen.Sha256) parts.push(`<span><i class="fas fa-fingerprint"></i> ${short(gen.Sha256)}</span>`);
-        resultElem.innerHTML = parts.join('<br>');
+            if(typeof val === 'string' || typeof val === 'number'){
+                const icon = iconMap[key] || 'fa-circle';
+                parts.push(`<span><i class="fas ${icon}"></i> ${short(val)}</span>`);
+            }
+        });
+        resultElem.innerHTML = parts.join(' ');
     }
 };
 
