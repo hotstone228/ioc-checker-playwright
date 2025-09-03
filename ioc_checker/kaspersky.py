@@ -37,10 +37,11 @@ def classify_ioc(ioc: str) -> str:
 
 
 @asynccontextmanager
-async def get_context() -> AsyncIterator[httpx.AsyncClient]:
+async def get_context(token: str | None = None) -> AsyncIterator[httpx.AsyncClient]:
     headers = {}
-    if settings.kaspersky_token:
-        headers["x-api-key"] = settings.kaspersky_token
+    tok = token or settings.kaspersky_token
+    if tok:
+        headers["x-api-key"] = tok
     async with httpx.AsyncClient(base_url=API_BASE, headers=headers, timeout=10) as client:
         yield client
 

@@ -36,6 +36,7 @@ NORMALIZE_KIND = {
 class ScanRequest(BaseModel):
     iocs: list[str]
     service: str = settings.providers[0]
+    kaspersky_token: str | None = None
 
 
 class ParseRequest(BaseModel):
@@ -101,7 +102,7 @@ async def scan(req: ScanRequest) -> dict:
     for ioc in req.iocs:
         if not ioc:
             continue
-        task_id = await add_task(ioc, req.service)
+        task_id = await add_task(ioc, req.service, req.kaspersky_token)
         task_ids.append({"id": task_id, "ioc": ioc, "service": req.service})
     return {"tasks": task_ids}
 

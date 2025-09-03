@@ -14,6 +14,7 @@ class Task:
     status: str = "queued"  # queued, processing, done, error
     result: Optional[dict] = None
     error: Optional[str] = None
+    token: Optional[str] = None
 
 # In-memory storage
 _tasks: Dict[str, Task] = {}
@@ -22,9 +23,9 @@ queue: asyncio.Queue[str] = asyncio.Queue()
 logger = logging.getLogger(__name__)
 
 
-async def add_task(ioc: str, service: str = settings.providers[0]) -> str:
+async def add_task(ioc: str, service: str = settings.providers[0], token: Optional[str] = None) -> str:
     task_id = str(uuid.uuid4())
-    task = Task(id=task_id, ioc=ioc, service=service)
+    task = Task(id=task_id, ioc=ioc, service=service, token=token)
     _tasks[task_id] = task
     await queue.put(task_id)
     logger.info("Queued task %s for %s", task_id, service)

@@ -111,6 +111,13 @@
             {% endfor %}
         </select>
     </div>
+    <details id="advanced-settings">
+        <summary>Advanced Settings</summary>
+        <div>
+            <label for="kaspersky-token">Kaspersky API token</label>
+            <input type="password" id="kaspersky-token" placeholder="API token">
+        </div>
+    </details>
     <div>
         <button id="scan-all">Scan all</button>
         <button id="copy-malicious">Copy malicious</button>
@@ -120,6 +127,13 @@
 
 <script>
 let parsedData = {};
+const tokenInput = document.getElementById('kaspersky-token');
+if(tokenInput){
+    tokenInput.value = localStorage.getItem('kaspersky_token') || '';
+    tokenInput.addEventListener('input', () => {
+        localStorage.setItem('kaspersky_token', tokenInput.value);
+    });
+}
 const SCANNABLE = ['ipv4','ipv6','fqdn','uri','md5','sha1','sha256','sha512'];
 
 const RESULT_PARSERS = {
@@ -268,7 +282,12 @@ function renderParsed(){
 function scan(iocs){
     if(!iocs.length) return;
     const service = document.getElementById('provider').value;
-    fetch('/scan', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({service, iocs})})
+    const body = {service, iocs};
+    const token = localStorage.getItem('kaspersky_token');
+    if(service === 'kaspersky' && token){
+        body.kaspersky_token = token;
+    }
+    fetch('/scan', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)})
         .then(r => r.json())
         .then(data => {
             data.tasks.forEach(t => {

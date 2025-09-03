@@ -26,7 +26,10 @@ async def worker() -> None:
         if not module:
             logger.warning("Unknown provider %s configured", name)
             continue
-        ctx = await stack.enter_async_context(module.get_context())
+        if name == "kaspersky":
+            ctx = await stack.enter_async_context(module.get_context(settings.kaspersky_token))
+        else:
+            ctx = await stack.enter_async_context(module.get_context())
         contexts[name] = ctx
     try:
         while True:
@@ -46,14 +49,18 @@ async def worker() -> None:
                     logger.info("Cache hit for task %s", task_id)
                 else:
                     module = SERVICE_MAP.get(task.service)
-                    context = contexts.get(task.service)
-                    if module and context is not None:
-                        task.result = await module.fetch_ioc_info(task.ioc, context)
-                        await cache_result(task.ioc, task.service, task.result)
-                        task.status = "done"
-                        logger.info("Task %s completed", task_id)
+                    if module is kaspersky and task.token:
+                        async with kaspersky.get_context(task.token) as ctx:
+                            task.result = await module.fetch_ioc_info(task.ioc, ctx)
                     else:
-                        raise ValueError(f"unsupported service {task.service}")
+                        context = contexts.get(task.service)
+                        if module and context is not None:
+                            task.result = await module.fetch_ioc_info(task.ioc, context)
+                        else:
+                            raise ValueError(f"unsupported service {task.service}")
+                    await cache_result(task.ioc, task.service, task.result)
+                    task.status = "done"
+                    logger.info("Task %s completed", task_id)
             except Exception as exc:  # noqa: BLE001
                 task.status = "error"
                 task.error = str(exc)
