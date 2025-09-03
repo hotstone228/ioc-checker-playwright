@@ -135,6 +135,18 @@ const RESULT_PARSERS = {
 
         const gen = res.general_info || {};
         const parts = [];
+        const short = v => typeof v === 'string' && v.length > 30 ? v.slice(0,27) + '...' : v;
+        if(info.type === 'domain'){
+            if(res.zone) parts.push(`<span><i class="fas fa-shield-halved"></i> ${res.zone}</span>`);
+            if(typeof gen.Ipv4Count === 'number') parts.push(`<span><i class="fas fa-network-wired"></i> ${gen.Ipv4Count}</span>`);
+            if(Array.isArray(gen.Categories) && gen.Categories.length){
+                let cat = gen.Categories[0];
+                if(cat.includes('_')) cat = cat.split('_').slice(1).join(' ');
+                parts.push(`<span><i class="fas fa-tags"></i> ${short(cat)}</span>`);
+            }
+            resultElem.innerHTML = parts.join(' ');
+            return;
+        }
         if(res.zone) parts.push(`<span><i class="fas fa-shield-halved"></i> ${res.zone}</span>`);
         if(gen.FileStatus) parts.push(`<span><i class="fas fa-bug"></i> ${gen.FileStatus}</span>`);
         if(gen.Type) parts.push(`<span><i class="fas fa-file"></i> ${gen.Type}</span>`);
@@ -142,7 +154,7 @@ const RESULT_PARSERS = {
         if(typeof gen.HitsCount === 'number') parts.push(`<span><i class="fas fa-bolt"></i> ${gen.HitsCount}</span>`);
         if(gen.FirstSeen) parts.push(`<span><i class="fas fa-calendar-plus"></i> ${gen.FirstSeen}</span>`);
         if(gen.LastSeen) parts.push(`<span><i class="fas fa-calendar-minus"></i> ${gen.LastSeen}</span>`);
-        if(gen.Sha256) parts.push(`<span><i class="fas fa-fingerprint"></i> ${gen.Sha256}</span>`);
+        if(gen.Sha256) parts.push(`<span><i class="fas fa-fingerprint"></i> ${short(gen.Sha256)}</span>`);
         resultElem.innerHTML = parts.join('<br>');
     }
 };
