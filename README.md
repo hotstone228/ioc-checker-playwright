@@ -1,11 +1,11 @@
 # IOC Checker with Playwright
 
-This project demonstrates a small microservice-style application that accepts Indicators of Compromise (IOCs) and fetches their reputations from services such as VirusTotal and Kaspersky OpenTIP. VirusTotal lookups are performed via [Playwright](https://playwright.dev) while Kaspersky requests use the official REST API. Parsing of IOCs relies on the [iocparser](https://pypi.org/project/iocparser/) library.
+This project demonstrates a small microservice-style application that accepts Indicators of Compromise (IOCs) and fetches their reputations from services such as Kaspersky OpenTIP. Kaspersky requests use the official REST API. Parsing of IOCs relies on the [iocparser](https://pypi.org/project/iocparser/) library.
 
 ## Components
 
 - **FastAPI web UI** – parse and submit IOCs with progress updates.
-- **Worker** – consumes a queue and performs lookups against the configured providers (VirusTotal via Playwright, Kaspersky OpenTIP via HTTP API).
+- **Worker** – consumes a queue and performs lookups against the configured providers (e.g., Kaspersky OpenTIP via HTTP API).
 - **Queue** – in-memory task queue coordinating the two components.
 
 ## Running
@@ -31,8 +31,8 @@ Runtime options live in `config.toml`:
 worker_count = 2        # number of worker tasks
 headless = false        # show browser windows for debugging
 log_level = "DEBUG"     # logging verbosity
-wait_until = "domcontentloaded" # page load milestone for VirusTotal navigation
-providers = ["virustotal", "kaspersky"] # enabled reputation services
+wait_until = "domcontentloaded" # page load milestone for browser automation
+providers = ["kaspersky"] # enabled reputation services
 # API tokens can be supplied via secrets.toml (see secrets.toml.example)
 kaspersky_token = ""
 ```
@@ -46,7 +46,7 @@ If present, `secrets.toml` overrides settings from `config.toml` and is ignored 
 
 - `POST /parse` – body `{ "text": "..." }` returns detected IOCs grouped by type.
 - `POST /parse-file` – multipart upload of a text-based file (`.txt`, `.log`, `.csv`, `.json`) returning detected IOCs.
-- `POST /scan` – body `{ "service": "virustotal" | "kaspersky", "iocs": ["..."] }` queues IOCs for the specified service.
+- `POST /scan` – body `{ "service": "kaspersky", "iocs": ["..."] }` queues IOCs for the specified service.
 - `GET /status/{id}` – retrieve task progress and results.
 
 ## Notes

@@ -11,7 +11,7 @@ class Settings:
     headless: bool = False
     log_level: str = "DEBUG"
     wait_until: Literal["commit", "domcontentloaded", "load", "networkidle"] = "domcontentloaded"
-    providers: list[str] = field(default_factory=lambda: ["virustotal"])
+    providers: list[str] = field(default_factory=lambda: ["kaspersky"])
     kaspersky_token: str | None = None
     database_url: str = "sqlite+aiosqlite:///./cache.db"
 
