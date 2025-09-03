@@ -116,6 +116,37 @@
 let parsedData = {};
 const SCANNABLE = ['ipv4','ipv6','fqdn','uri','md5','sha1','sha256','sha512'];
 
+const RESULT_PARSERS = {
+    kaspersky: (info, statusElem, resultElem) => {
+        if(info.status_code !== 200){
+            statusElem.innerHTML = '<i class="fas fa-times"></i>';
+            statusElem.style.color = '#e74c3c';
+            resultElem.textContent = info.error || 'error';
+            return;
+        }
+        const res = info.data || {};
+        const zone = (res.zone || '').toLowerCase();
+        const zoneColors = {green:'#4caf50', yellow:'#f1c40f', red:'#e74c3c', grey:'#95a5a6'};
+        const valueElem = statusElem.parentElement.querySelector('.ioc-value');
+        if(valueElem && zoneColors[zone]) valueElem.style.color = zoneColors[zone];
+        if(zone && zone !== 'green') statusElem.dataset.malicious = 'true';
+        statusElem.innerHTML = '<i class="fas fa-check"></i>';
+        statusElem.style.color = zoneColors[zone] || '#4caf50';
+
+        const gen = res.general_info || {};
+        const parts = [];
+        if(res.zone) parts.push(`<span><i class="fas fa-shield-halved"></i> ${res.zone}</span>`);
+        if(gen.FileStatus) parts.push(`<span><i class="fas fa-bug"></i> ${gen.FileStatus}</span>`);
+        if(gen.Type) parts.push(`<span><i class="fas fa-file"></i> ${gen.Type}</span>`);
+        if(typeof gen.Size === 'number') parts.push(`<span><i class="fas fa-weight-hanging"></i> ${gen.Size}</span>`);
+        if(typeof gen.HitsCount === 'number') parts.push(`<span><i class="fas fa-bolt"></i> ${gen.HitsCount}</span>`);
+        if(gen.FirstSeen) parts.push(`<span><i class="fas fa-calendar-plus"></i> ${gen.FirstSeen}</span>`);
+        if(gen.LastSeen) parts.push(`<span><i class="fas fa-calendar-minus"></i> ${gen.LastSeen}</span>`);
+        if(gen.Sha256) parts.push(`<span><i class="fas fa-fingerprint"></i> ${gen.Sha256}</span>`);
+        resultElem.innerHTML = parts.join('<br>');
+    }
+};
+
 document.getElementById('provider').addEventListener('change', renderParsed);
 
 const fileInput = document.getElementById('file-input');
@@ -229,27 +260,9 @@ function poll(id, statusElem, resultElem){
             statusElem.style.color = '#999';
             setTimeout(() => poll(id, statusElem, resultElem), 1000);
         }else if(data.status === 'done'){
-            if(data.service === 'kaspersky'){
-                const info = data.result || {};
-                if(info.status_code !== 200){
-                    statusElem.innerHTML = '<i class="fas fa-times"></i>';
-                    statusElem.style.color = '#e74c3c';
-                    resultElem.textContent = info.error || 'error';
-                    return;
-                }
-                const res = info.data || {};
-                let text = `zone ${res.zone || 'unknown'}`;
-                if(res.status) text += `, status ${res.status}`;
-                if(typeof res.hits_count === 'number') text += `, hits ${res.hits_count}`;
-                if(res.categories && res.categories.length) text += `, categories ${res.categories.join(', ')}`;
-                const zone = (res.zone || '').toLowerCase();
-                const valueElem = statusElem.parentElement.querySelector('.ioc-value');
-                const zoneColors = {green:'#4caf50', yellow:'#f1c40f', red:'#e74c3c', grey:'#95a5a6'};
-                if(valueElem && zoneColors[zone]) valueElem.style.color = zoneColors[zone];
-                if(zone && zone !== 'green') statusElem.dataset.malicious = 'true';
-                statusElem.innerHTML = '<i class="fas fa-check"></i>';
-                statusElem.style.color = zoneColors[zone] || '#4caf50';
-                resultElem.textContent = text;
+            const parser = RESULT_PARSERS[data.service];
+            if(parser){
+                parser(data.result || {}, statusElem, resultElem);
             }else{
                 statusElem.innerHTML = '<i class="fas fa-times"></i>';
                 statusElem.style.color = '#e74c3c';
