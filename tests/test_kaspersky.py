@@ -20,7 +20,7 @@ def test_parse_hash_only_first_seen():
     assert "last_seen" not in parsed
 
 
-def test_lookup_ip_uses_ip_param():
+def test_lookup_ip_uses_request_param():
     called = {}
 
     async def handler(request: httpx.Request) -> httpx.Response:  # noqa: D401
@@ -36,5 +36,5 @@ def test_lookup_ip_uses_ip_param():
 
     asyncio.run(run())
 
-    assert "ip=1.2.3.4" in called["url"]
+    assert "request=1.2.3.4" in called["url"]
 

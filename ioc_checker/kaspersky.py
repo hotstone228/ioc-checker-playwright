@@ -144,7 +144,7 @@ async def lookup_hash(value: str, client: httpx.AsyncClient) -> Dict[str, Any]:
 
 
 async def lookup_ip(value: str, client: httpx.AsyncClient) -> Dict[str, Any]:
-    resp = await client.get("/search/ip", params={"ip": value})
+    resp = await client.get("/search/ip", params={"request": value})
     result = _handle_response(resp)
     if isinstance(result.get("data"), dict):
         result["data"] = _parse_ip(result["data"])
