@@ -40,6 +40,9 @@ async def get_cached_result(ioc: str, provider: str) -> dict | None:
 
 
 async def cache_result(ioc: str, provider: str, response: dict) -> None:
+    status = response.get("status_code")
+    if status not in {200, 404}:
+        return
     async with SessionLocal() as session:
         stmt = select(Cache).where(Cache.ioc == ioc, Cache.provider == provider)
         res = await session.execute(stmt)

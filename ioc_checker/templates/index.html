@@ -81,6 +81,12 @@
             color: #fff;
         }
 
+        .ioc-item .links img {
+            width: 16px;
+            height: 16px;
+            vertical-align: middle;
+        }
+
         .ioc-item .result {
             margin-left: auto;
             font-size: 0.9em;
@@ -232,13 +238,13 @@ function renderParsed(){
             const vt = document.createElement('a');
             vt.href = `https://www.virustotal.com/gui/search/${encodeURIComponent(val)}`;
             vt.target = '_blank';
-            vt.innerHTML = '<i class="fas fa-virus"></i>';
+            vt.innerHTML = '<img src="https://www.virustotal.com/gui/images/favicon-32x32.png" alt="VT" width="16" height="16">';
             links.appendChild(vt);
             if(SCANNABLE.includes(kind)){
                 const kas = document.createElement('a');
                 kas.href = `https://opentip.kaspersky.com/${val}`;
                 kas.target = '_blank';
-                kas.innerHTML = '<i class="fas fa-shield-halved"></i>';
+                kas.innerHTML = '<img src="https://opentip.kaspersky.com/favicon.ico" alt="Kaspersky" width="16" height="16">';
                 links.appendChild(kas);
             }
             item.appendChild(links);
