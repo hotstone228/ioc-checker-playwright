@@ -95,6 +95,7 @@
 
 <script>
 let parsedData = {};
+const SCANNABLE = ['ipv4','ipv6','fqdn','uri','md5','sha1','sha256','sha512'];
 
 document.getElementById('provider').addEventListener('change', renderParsed);
 
@@ -124,7 +125,6 @@ function renderParsed(){
     const container = document.getElementById('ioc-columns');
     container.innerHTML = '';
     Object.entries(parsedData).forEach(([kind, values]) => {
-        if(!['ipv4','fqdn','md5','sha1','sha256'].includes(kind)) return;
         const box = document.createElement('div');
         box.className = 'box';
         const title = document.createElement('h3');
@@ -147,17 +147,19 @@ function renderParsed(){
             list.appendChild(item);
         });
         box.appendChild(list);
-        const btn = document.createElement('button');
-        btn.className = 'button is-small is-link mt-2';
-        btn.textContent = 'Scan';
-        btn.addEventListener('click', () => scan(values));
-        box.appendChild(btn);
+        if(SCANNABLE.includes(kind)){
+            const btn = document.createElement('button');
+            btn.className = 'button is-small is-link mt-2';
+            btn.textContent = 'Scan';
+            btn.addEventListener('click', () => scan(values));
+            box.appendChild(btn);
+        }
         container.appendChild(box);
     });
 }
 
 function iocLink(provider, kind, value){
-    if(provider === 'kaspersky'){
+    if(provider === 'kaspersky' && SCANNABLE.includes(kind)){
         return `https://opentip.kaspersky.com/${value}`;
     }
     return '#';
@@ -179,7 +181,7 @@ function scan(iocs){
 document.getElementById('scan-all').addEventListener('click', () => {
     const all = [];
     Object.entries(parsedData).forEach(([kind, vals]) => {
-        if(['ipv4','fqdn','md5','sha1','sha256'].includes(kind)) all.push(...vals);
+        if(SCANNABLE.includes(kind)) all.push(...vals);
     });
     scan(all);
 });

@@ -23,14 +23,13 @@ from .database import init_db
 
 logger = logging.getLogger(__name__)
 
-KIND_MAP = {
+# Normalize pattern names returned by iocsearcher so the API exposes
+# consistent keys. Anything not listed here will use the original pattern
+# name as-is so new IOC types automatically appear in responses.
+NORMALIZE_KIND = {
     "ip4": "ipv4",
     "ip6": "ipv6",
-    "fqdn": "fqdn",
-    "url": "fqdn",
-    "md5": "md5",
-    "sha1": "sha1",
-    "sha256": "sha256",
+    "url": "uri",
 }
 
 
@@ -70,11 +69,8 @@ async def parse_iocs(req: ParseRequest) -> dict[str, list[str]]:
     logger.info("Found %d IOC(s)", len(parsed))
     result: dict[str, list[str]] = {}
     for item in parsed:
-        key = item.name.lower()
-        norm = KIND_MAP.get(key)
-        if not norm:
-            continue
-        result.setdefault(norm, []).append(item.value)
+        key = NORMALIZE_KIND.get(item.name.lower(), item.name.lower())
+        result.setdefault(key, []).append(item.value)
     return result
 
 
@@ -93,11 +89,8 @@ async def parse_file(file: UploadFile = File(...)) -> dict[str, list[str]]:
     logger.info("Found %d IOC(s)", len(parsed))
     result: dict[str, list[str]] = {}
     for item in parsed:
-        key = item.name.lower()
-        norm = KIND_MAP.get(key)
-        if not norm:
-            continue
-        result.setdefault(norm, []).append(item.value)
+        key = NORMALIZE_KIND.get(item.name.lower(), item.name.lower())
+        result.setdefault(key, []).append(item.value)
     return result
 
 
