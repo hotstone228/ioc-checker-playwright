@@ -158,12 +158,14 @@ const RESULT_PARSERS = {
         };
 
         const gen = res.general_info || {};
+        const skipKeys = new Set(['Domain','CategoriesWithZone','Sha1','Sha256','Md5','Sha512']);
         Object.entries(gen).forEach(([key, val]) => {
-            if(val === null || key === 'Domain' || key === 'CategoriesWithZone') return;
+            if(val === null || skipKeys.has(key)) return;
             if(key === 'Categories' && Array.isArray(val) && val.length){
-                let cat = val[0];
-                if(cat.includes('_')) cat = cat.split('_').slice(1).join(' ');
-                parts.push(`<span><i class="fas fa-tags"></i> ${short(cat)}</span>`);
+                val.forEach(cat => {
+                    if(cat.includes('_')) cat = cat.split('_').slice(1).join(' ');
+                    parts.push(`<span><i class="fas fa-tag"></i> ${short(cat)}</span>`);
+                });
                 return;
             }
             if(typeof val === 'string' || typeof val === 'number'){
