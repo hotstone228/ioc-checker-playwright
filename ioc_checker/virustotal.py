@@ -4,7 +4,7 @@ from collections.abc import AsyncIterator
 import logging
 
 from playwright.async_api import async_playwright, BrowserContext
-from iocparser import IOCParser
+from iocsearcher.searcher import Searcher
 
 from .config import settings
 
@@ -23,15 +23,17 @@ TAG_PATHS = {
 }
 
 
+searcher = Searcher()
+
+
 def classify_ioc(ioc: str) -> str:
-    parsed = IOCParser(ioc).parse()
-    if not parsed:
-        return "domain"
-    kind = parsed[0].kind.lower()
-    if kind in {"ip", "ipv4", "ipv6"}:
-        return "ip"
-    if kind in {"md5", "sha1", "sha256", "sha512"}:
-        return "hash"
+    parsed = searcher.search_data(ioc)
+    for item in parsed:
+        kind = item.name.lower()
+        if kind in {"ip4", "ip6"}:
+            return "ip"
+        if kind in {"md5", "sha1", "sha256", "sha512"}:
+            return "hash"
     return "domain"
 
 

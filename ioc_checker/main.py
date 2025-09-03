@@ -14,7 +14,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
-from iocparser import IOCParser
+from iocsearcher.searcher import Searcher
 
 from .queue import add_task, get_task
 from .worker import start_workers
@@ -24,10 +24,10 @@ from .database import init_db
 logger = logging.getLogger(__name__)
 
 KIND_MAP = {
-    "ip": "ipv4",
-    "ipv4": "ipv4",
-    "uri": "fqdn",
+    "ip4": "ipv4",
+    "ip6": "ipv6",
     "fqdn": "fqdn",
+    "url": "fqdn",
     "md5": "md5",
     "sha1": "sha1",
     "sha256": "sha256",
@@ -65,12 +65,12 @@ async def index(request: Request) -> HTMLResponse:
 @app.post("/parse")
 async def parse_iocs(req: ParseRequest) -> dict[str, list[str]]:
     logger.info("Parsing IOC text of length %d", len(req.text))
-    parser = IOCParser(req.text)
-    parsed = parser.parse()
+    searcher = Searcher()
+    parsed = searcher.search_data(req.text)
     logger.info("Found %d IOC(s)", len(parsed))
     result: dict[str, list[str]] = {}
     for item in parsed:
-        key = item.kind.lower()
+        key = item.name.lower()
         norm = KIND_MAP.get(key)
         if not norm:
             continue
@@ -88,12 +88,12 @@ async def parse_file(file: UploadFile = File(...)) -> dict[str, list[str]]:
     if ext not in ALLOWED_FILE_TYPES:
         raise HTTPException(status_code=400, detail="Unsupported file type")
     content = (await file.read()).decode("utf-8", "ignore")
-    parser = IOCParser(content)
-    parsed = parser.parse()
+    searcher = Searcher()
+    parsed = searcher.search_data(content)
     logger.info("Found %d IOC(s)", len(parsed))
     result: dict[str, list[str]] = {}
     for item in parsed:
-        key = item.kind.lower()
+        key = item.name.lower()
         norm = KIND_MAP.get(key)
         if not norm:
             continue

@@ -3,7 +3,7 @@ from typing import Any, Dict, AsyncIterator, Optional
 import logging
 
 import httpx
-from iocparser import IOCParser
+from iocsearcher.searcher import Searcher
 
 from .config import settings
 
@@ -21,17 +21,18 @@ ERROR_MAP = {
     429: "too many requests",
 }
 
+searcher = Searcher()
+
 
 def classify_ioc(ioc: str) -> str:
-    parsed = IOCParser(ioc).parse()
-    if parsed:
-        kind = parsed[0].kind.lower()
-        if kind in {"ip", "ipv4", "ipv6"}:
-            return "ip"
-        if kind in {"md5", "sha1", "sha256", "sha512"}:
-            return "hash"
-        if kind == "url":
-            return "url"
+    parsed = searcher.search_data(ioc)
+    kinds = {item.name.lower() for item in parsed}
+    if {"ip4", "ip6"} & kinds:
+        return "ip"
+    if {"md5", "sha1", "sha256", "sha512"} & kinds:
+        return "hash"
+    if "url" in kinds:
+        return "url"
     return "domain"
 
 

@@ -1,6 +1,6 @@
 # IOC Checker with Playwright
 
-This project demonstrates a small microservice-style application that accepts Indicators of Compromise (IOCs) and fetches their reputations from services such as Kaspersky OpenTIP. Kaspersky requests use the official REST API. Parsing of IOCs relies on the [iocparser](https://pypi.org/project/iocparser/) library.
+This project demonstrates a small microservice-style application that accepts Indicators of Compromise (IOCs) and fetches their reputations from services such as Kaspersky OpenTIP. Kaspersky requests use the official REST API. Parsing of IOCs relies on the [iocsearcher](https://github.com/malicialab/iocsearcher) library.
 
 ## Components
 
