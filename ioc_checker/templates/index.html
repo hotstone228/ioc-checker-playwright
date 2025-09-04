@@ -152,13 +152,15 @@ if(tokenInput){
         localStorage.setItem('api_token', tokenInput.value);
     });
 }
+let tabId = localStorage.getItem('tab_id');
+if(!tabId){
+    tabId = crypto.randomUUID();
+    localStorage.setItem('tab_id', tabId);
+}
 const SCANNABLE = ['ipv4','ipv6','fqdn','uri','md5','sha1','sha256','sha512'];
 
 function updateQueueCount(){
-    const token = localStorage.getItem('api_token');
-    let url = '/queue';
-    if(token) url += `?token=${encodeURIComponent(token)}`;
-    fetch(url).then(r => r.json()).then(data => {
+    fetch(`/queue?tab_id=${encodeURIComponent(tabId)}`).then(r => r.json()).then(data => {
         const el = document.getElementById('queue-count');
         if(el) el.textContent = data.queue;
     });
@@ -347,6 +349,7 @@ function scan(iocs){
     } else if(token) {
         body.token = token;
     }
+    body.tab_id = tabId;
     fetch('/scan', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)})
         .then(r => r.json())
         .then(data => {

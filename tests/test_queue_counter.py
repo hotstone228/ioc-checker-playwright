@@ -7,9 +7,9 @@ def test_queue_counts():
     importlib.reload(queue)
 
     async def run():
-        await queue.add_task("ioc1", token="A")
-        await queue.add_task("ioc2", token="A")
-        await queue.add_task("ioc3", token="B")
+        await queue.add_task("ioc1", tab_id="A")
+        await queue.add_task("ioc2", tab_id="A")
+        await queue.add_task("ioc3", tab_id="B")
         assert queue.get_queue_size("A") == "2/3"
         assert queue.get_queue_size("B") == "1/3"
         task_id = await queue.queue.get()
