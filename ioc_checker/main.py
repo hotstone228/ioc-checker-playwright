@@ -19,7 +19,7 @@ from pydantic import BaseModel
 from iocsearcher.searcher import Searcher
 from iocsearcher.document import open_document
 
-from .queue import add_task, get_task
+from .queue import add_task, get_task, get_queue_size
 from .worker import start_workers
 from .config import settings
 from .database import init_db
@@ -130,7 +130,8 @@ async def scan(req: ScanRequest) -> dict:
             continue
         task_id = await add_task(ioc, req.service, req.token)
         task_ids.append({"id": task_id, "ioc": ioc, "service": req.service})
-    return {"tasks": task_ids}
+    queue_size = get_queue_size(req.token)
+    return {"tasks": task_ids, "queue": queue_size}
 
 @app.get("/status/{task_id}")
 async def status(task_id: str) -> dict:
