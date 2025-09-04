@@ -12,7 +12,6 @@ class Settings:
     log_level: str = "DEBUG"
     wait_until: Literal["commit", "domcontentloaded", "load", "networkidle"] = "domcontentloaded"
     providers: list[str] = field(default_factory=lambda: ["kaspersky"])
-    kaspersky_token: str | None = None
     database_url: str = "sqlite+aiosqlite:///./cache.db"
 
 
@@ -22,10 +21,6 @@ def load_settings() -> Settings:
     data = {}
     if path.exists():
         data = tomllib.loads(path.read_text())
-    secret_path = base / "secrets.toml"
-    if secret_path.exists():
-        secrets = tomllib.loads(secret_path.read_text())
-        data.update(secrets)
     valid = {"commit", "domcontentloaded", "load", "networkidle"}
     if data.get("wait_until") not in valid:
         data.pop("wait_until", None)

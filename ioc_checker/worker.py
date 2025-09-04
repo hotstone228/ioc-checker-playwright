@@ -1,36 +1,18 @@
 import asyncio
 import logging
-from contextlib import AsyncExitStack
 from typing import Dict, Any
 
 from .queue import queue, get_task
 from .config import settings
-from . import virustotal, kaspersky
 from .database import get_cached_result, cache_result
+from .providers import init_contexts, fetch_ioc
 
 logger = logging.getLogger(__name__)
 
 
-SERVICE_MAP: Dict[str, Any] = {
-    "virustotal": virustotal,
-    "kaspersky": kaspersky,
-}
-
-
 async def worker() -> None:
     logger.info("Worker started")
-    stack = AsyncExitStack()
-    contexts: Dict[str, Any] = {}
-    for name in settings.providers:
-        module = SERVICE_MAP.get(name)
-        if not module:
-            logger.warning("Unknown provider %s configured", name)
-            continue
-        if name == "kaspersky":
-            ctx = await stack.enter_async_context(module.get_context(settings.kaspersky_token))
-        else:
-            ctx = await stack.enter_async_context(module.get_context())
-        contexts[name] = ctx
+    contexts, stack = await init_contexts(settings.providers)
     try:
         while True:
             task_id = await queue.get()
@@ -48,16 +30,9 @@ async def worker() -> None:
                     task.status = "done"
                     logger.info("Cache hit for task %s", task_id)
                 else:
-                    module = SERVICE_MAP.get(task.service)
-                    if module is kaspersky and task.token:
-                        async with kaspersky.get_context(task.token) as ctx:
-                            task.result = await module.fetch_ioc_info(task.ioc, ctx)
-                    else:
-                        context = contexts.get(task.service)
-                        if module and context is not None:
-                            task.result = await module.fetch_ioc_info(task.ioc, context)
-                        else:
-                            raise ValueError(f"unsupported service {task.service}")
+                    task.result = await fetch_ioc(
+                        task.service, task.ioc, task.token, contexts
+                    )
                     await cache_result(task.ioc, task.service, task.result)
                     task.status = "done"
                     logger.info("Task %s completed", task_id)

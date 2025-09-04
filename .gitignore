@@ -1,6 +1,5 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
-secrets.toml
 cache.db
 

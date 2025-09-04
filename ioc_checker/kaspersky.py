@@ -5,8 +5,6 @@ import logging
 import httpx
 from iocsearcher.searcher import Searcher
 
-from .config import settings
-
 logger = logging.getLogger(__name__)
 
 API_BASE = "https://opentip.kaspersky.com/api/v1"
@@ -39,9 +37,8 @@ def classify_ioc(ioc: str) -> str:
 @asynccontextmanager
 async def get_context(token: str | None = None) -> AsyncIterator[httpx.AsyncClient]:
     headers = {}
-    tok = token or settings.kaspersky_token
-    if tok:
-        headers["x-api-key"] = tok
+    if token:
+        headers["x-api-key"] = token
     async with httpx.AsyncClient(base_url=API_BASE, headers=headers, timeout=10) as client:
         yield client
 

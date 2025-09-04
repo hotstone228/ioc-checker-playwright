@@ -21,7 +21,7 @@ starting Hypercorn so that Playwright can spawn browser subprocesses.
 
 Open <http://localhost:8000> and paste any text containing IOCs. The left pane auto-parses as you type (or after uploading a file) and the right pane groups detected IOCs by type such as IPv4/IPv6, domains, URLs, hashes, emails and many others. Only IOCs supported by the chosen provider expose a **Scan** button, or use **Scan all** to submit every scannable IOC. Scan results appear inline next to each IOC with icons and tags, and **Copy malicious** copies all detected malicious IOCs to your clipboard.
 
-Use the **Provider** dropdown to select which reputation service to query. Results are rendered inline with icons and a concise summary of reputation, detection counts, and any tags associated with the IOC.
+Use the **Provider** dropdown in the **Advanced Settings** section to select which reputation service to query. Results are rendered inline with icons and a concise summary of reputation, detection counts, and any tags associated with the IOC.
 
 ### Configuration
 
@@ -33,20 +33,19 @@ headless = false        # show browser windows for debugging
 log_level = "DEBUG"     # logging verbosity
 wait_until = "domcontentloaded" # page load milestone for browser automation
 providers = ["kaspersky"] # enabled reputation services
-# API tokens can be supplied via secrets.toml (see secrets.toml.example)
-kaspersky_token = ""
 ```
 
 Adjust these values to change worker pool size, toggle headless mode, or modify log levels for all services. `wait_until` accepts
 any Playwright load milestone: `commit`, `domcontentloaded`, `load`, or `networkidle`.
 
-If present, `secrets.toml` overrides settings from `config.toml` and is ignored by git; copy `secrets.toml.example` and place your `kaspersky_token` there to keep credentials out of version control.
+Provider API tokens must be supplied through the web interface under **Advanced Settings**.
+
 
 ### API
 
 - `POST /parse` – body `{ "text": "..." }` returns detected IOCs grouped by type.
 - `POST /parse-file` – multipart upload of a text-based file (`.txt`, `.log`, `.csv`, `.json`) returning detected IOCs.
-- `POST /scan` – body `{ "service": "kaspersky", "iocs": ["..."] }` queues IOCs for the specified service.
+- `POST /scan` – body `{ "service": "kaspersky", "iocs": ["..."], "token": "..." }` queues IOCs for the specified service (token required when the provider mandates it).
 - `GET /status/{id}` – retrieve task progress and results.
 
 ## Notes

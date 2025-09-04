@@ -20,6 +20,7 @@ from .queue import add_task, get_task
 from .worker import start_workers
 from .config import settings
 from .database import init_db
+from .providers import requires_token
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +37,7 @@ NORMALIZE_KIND = {
 class ScanRequest(BaseModel):
     iocs: list[str]
     service: str = settings.providers[0]
-    kaspersky_token: str | None = None
+    token: str | None = None
 
 
 class ParseRequest(BaseModel):
@@ -97,12 +98,14 @@ async def parse_file(file: UploadFile = File(...)) -> dict[str, list[str]]:
 
 @app.post("/scan")
 async def scan(req: ScanRequest) -> dict:
+    if requires_token(req.service) and not req.token:
+        raise HTTPException(status_code=400, detail="API token required")
     logger.info("Queueing %d IOC(s) for service %s", len(req.iocs), req.service)
     task_ids = []
     for ioc in req.iocs:
         if not ioc:
             continue
-        task_id = await add_task(ioc, req.service, req.kaspersky_token)
+        task_id = await add_task(ioc, req.service, req.token)
         task_ids.append({"id": task_id, "ioc": ioc, "service": req.service})
     return {"tasks": task_ids}
 

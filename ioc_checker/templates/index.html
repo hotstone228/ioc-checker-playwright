@@ -50,6 +50,23 @@
             cursor: pointer;
         }
 
+        textarea, input, button, select {
+            border-radius: 8px;
+        }
+
+        #drop-zone {
+            border: 2px dashed #555;
+            padding: 1rem;
+            text-align: center;
+            cursor: pointer;
+            margin-bottom: 1rem;
+            border-radius: 8px;
+        }
+
+        #drop-zone.dragover {
+            background: #1e1e1e;
+        }
+
         button {
             margin-top: 0.5rem;
         }
@@ -96,26 +113,26 @@
 <body>
 <div id="input-column">
     <h1>IOC Checker</h1>
-    <div>
-        <button id="upload-btn"><i class="fas fa-upload"></i> Upload file</button>
+    <div id="drop-zone">
+        <p>Drop file or click to upload</p>
         <input type="file" id="file-input" accept=".txt,.log,.csv,.json" style="display:none">
     </div>
     <div>
         <textarea id="raw-input" placeholder="Paste text containing IOCs"></textarea>
     </div>
-    <div>
-        <label for="provider">Provider</label>
-        <select id="provider">
-            {% for p in providers %}
-            <option value="{{p}}">{{p}}</option>
-            {% endfor %}
-        </select>
-    </div>
     <details id="advanced-settings">
         <summary>Advanced Settings</summary>
         <div>
-            <label for="kaspersky-token">Kaspersky API token</label>
-            <input type="password" id="kaspersky-token" placeholder="API token">
+            <label for="provider">Provider</label>
+            <select id="provider">
+                {% for p in providers %}
+                <option value="{{p}}">{{p}}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label for="api-token">API token</label>
+            <input type="password" id="api-token" placeholder="API token">
         </div>
     </details>
     <div>
@@ -127,11 +144,11 @@
 
 <script>
 let parsedData = {};
-const tokenInput = document.getElementById('kaspersky-token');
+const tokenInput = document.getElementById('api-token');
 if(tokenInput){
-    tokenInput.value = localStorage.getItem('kaspersky_token') || '';
+    tokenInput.value = localStorage.getItem('api_token') || '';
     tokenInput.addEventListener('input', () => {
-        localStorage.setItem('kaspersky_token', tokenInput.value);
+        localStorage.setItem('api_token', tokenInput.value);
     });
 }
 const SCANNABLE = ['ipv4','ipv6','fqdn','uri','md5','sha1','sha256','sha512'];
@@ -203,15 +220,38 @@ const RESULT_PARSERS = {
 document.getElementById('provider').addEventListener('change', renderParsed);
 
 const fileInput = document.getElementById('file-input');
-document.getElementById('upload-btn').addEventListener('click', () => fileInput.click());
+const dropZone = document.getElementById('drop-zone');
+
+dropZone.addEventListener('click', () => fileInput.click());
+
+dropZone.addEventListener('dragover', e => {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+});
+
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+
+dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    if(e.dataTransfer.files.length){
+        handleFile(e.dataTransfer.files[0]);
+    }
+});
+
 fileInput.addEventListener('change', () => {
-    if (!fileInput.files.length) return;
+    if (fileInput.files.length) {
+        handleFile(fileInput.files[0]);
+    }
+});
+
+function handleFile(file){
     const formData = new FormData();
-    formData.append('file', fileInput.files[0]);
+    formData.append('file', file);
     fetch('/parse-file', {method:'POST', body: formData})
         .then(r => r.json())
         .then(data => { parsedData = data; renderParsed(); });
-});
+}
 
 let debounceTimer;
 document.getElementById('raw-input').addEventListener('input', () => {
@@ -283,9 +323,16 @@ function scan(iocs){
     if(!iocs.length) return;
     const service = document.getElementById('provider').value;
     const body = {service, iocs};
-    const token = localStorage.getItem('kaspersky_token');
-    if(service === 'kaspersky' && token){
-        body.kaspersky_token = token;
+    const token = localStorage.getItem('api_token');
+    const tokenRequired = service === 'kaspersky';
+    if(tokenRequired){
+        if(!token){
+            alert('Please provide an API token in Advanced Settings.');
+            return;
+        }
+        body.token = token;
+    } else if(token) {
+        body.token = token;
     }
     fetch('/scan', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)})
         .then(r => r.json())
