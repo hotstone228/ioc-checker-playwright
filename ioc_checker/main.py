@@ -102,6 +102,12 @@ async def parse_file(file: UploadFile = File(...)) -> dict[str, list[str]]:
                 raise HTTPException(status_code=400, detail="Unsupported file type")
             text, _ = doc.get_text(options={})
         finally:
+            # Ensure any file handles opened by the document parser are
+            # released before attempting to remove the temporary file.
+            try:
+                del doc  # triggers object destructor and closes handles
+            except UnboundLocalError:
+                pass
             os.unlink(tmp_path)
     searcher = Searcher()
     parsed = searcher.search_data(text)
