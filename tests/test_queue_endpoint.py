@@ -36,3 +36,20 @@ def test_queue_endpoint():
     resp_b = client.get("/queue", params={"token": "B"})
     assert resp_a.json()["queue"] == "1/2"
     assert resp_b.json()["queue"] == "1/2"
+
+    # Mark one task as processing; counts should remain until done
+    task_id = asyncio.run(queue.queue.get())
+    task = queue.get_task(task_id)
+    task.status = "processing"
+    queue.queue.task_done()
+    resp_a = client.get("/queue", params={"token": task.token})
+    resp_b = client.get("/queue", params={"token": "B" if task.token != "B" else "A"})
+    assert resp_a.json()["queue"] == "1/2"
+    assert resp_b.json()["queue"] == "1/2"
+
+    # Complete the task and ensure counts decrease
+    task.status = "done"
+    resp_a = client.get("/queue", params={"token": "A"})
+    resp_b = client.get("/queue", params={"token": "B"})
+    assert resp_a.json()["queue"] == ("0/1" if task.token == "A" else "1/1")
+    assert resp_b.json()["queue"] == ("0/1" if task.token == "B" else "1/1")

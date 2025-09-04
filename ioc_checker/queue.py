@@ -37,11 +37,11 @@ def get_task(task_id: str) -> Optional[Task]:
 
 
 def get_queue_counts(token: Optional[str] = None) -> Tuple[int, int]:
-    """Return queued task counts for a token and globally."""
+    """Return outstanding task counts for a token and globally."""
     total = 0
     mine = 0
     for task in _tasks.values():
-        if task.status == "queued":
+        if task.status not in {"done", "error"}:
             total += 1
             if task.token == token:
                 mine += 1
