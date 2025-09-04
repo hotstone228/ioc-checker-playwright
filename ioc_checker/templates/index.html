@@ -139,6 +139,7 @@
         <button id="scan-all">Scan all</button>
         <button id="copy-malicious">Copy malicious</button>
     </div>
+    <div id="queue-display">Queue: <span id="queue-count">0/0</span></div>
 </div>
 <div id="ioc-columns"></div>
 
@@ -152,6 +153,18 @@ if(tokenInput){
     });
 }
 const SCANNABLE = ['ipv4','ipv6','fqdn','uri','md5','sha1','sha256','sha512'];
+
+function updateQueueCount(){
+    const token = localStorage.getItem('api_token');
+    let url = '/queue';
+    if(token) url += `?token=${encodeURIComponent(token)}`;
+    fetch(url).then(r => r.json()).then(data => {
+        const el = document.getElementById('queue-count');
+        if(el) el.textContent = data.queue;
+    });
+}
+setInterval(updateQueueCount, 1000);
+updateQueueCount();
 
 const RESULT_PARSERS = {
     kaspersky: (info, statusElem, resultElem) => {
@@ -341,6 +354,7 @@ function scan(iocs){
                 const elem = [...document.querySelectorAll('.ioc-item')].find(div => div.dataset.value === t.ioc);
                 if(elem) poll(t.id, elem.querySelector('.status'), elem.querySelector('.result'));
             });
+            updateQueueCount();
         });
 }
 

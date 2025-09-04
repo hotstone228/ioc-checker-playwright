@@ -133,6 +133,12 @@ async def scan(req: ScanRequest) -> dict:
     queue_size = get_queue_size(req.token)
     return {"tasks": task_ids, "queue": queue_size}
 
+
+@app.get("/queue")
+async def queue_status(token: str | None = None) -> dict:
+    """Return current queue size for the session and globally."""
+    return {"queue": get_queue_size(token)}
+
 @app.get("/status/{task_id}")
 async def status(task_id: str) -> dict:
     logger.debug("Status requested for task %s", task_id)
