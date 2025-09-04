@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 WorkingDirectory=/opt/ioc-checker-playwright
-ExecStart=/usr/bin/env python -m hypercorn ioc_checker.main:app --bind 0.0.0.0:8000
+ExecStart=/opt/ioc-checker-playwright/venv/python -m hypercorn ioc_checker.main:app --bind 0.0.0.0:8000
 Restart=on-failure
 
 [Install]
