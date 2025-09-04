@@ -41,7 +41,6 @@ class ScanRequest(BaseModel):
     iocs: list[str]
     service: str = settings.providers[0]
     token: str | None = None
-    tab_id: str | None = None
 
 
 class ParseRequest(BaseModel):
@@ -129,16 +128,16 @@ async def scan(req: ScanRequest) -> dict:
     for ioc in req.iocs:
         if not ioc:
             continue
-        task_id = await add_task(ioc, req.service, req.token, req.tab_id)
+        task_id = await add_task(ioc, req.service, req.token)
         task_ids.append({"id": task_id, "ioc": ioc, "service": req.service})
-    queue_size = get_queue_size(req.tab_id)
+    queue_size = get_queue_size()
     return {"tasks": task_ids, "queue": queue_size}
 
 
 @app.get("/queue")
-async def queue_status(tab_id: str | None = None) -> dict:
-    """Return current queue size for the tab and globally."""
-    return {"queue": get_queue_size(tab_id)}
+async def queue_status() -> dict:
+    """Return current global queue size."""
+    return {"queue": get_queue_size()}
 
 @app.get("/status/{task_id}")
 async def status(task_id: str) -> dict:

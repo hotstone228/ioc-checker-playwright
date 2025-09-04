@@ -28,28 +28,22 @@ def test_queue_endpoint():
     client = TestClient(main.app)
 
     async def run():
-        await queue.add_task("ioc1", tab_id="A")
-        await queue.add_task("ioc2", tab_id="B")
+        await queue.add_task("ioc1")
+        await queue.add_task("ioc2")
     asyncio.run(run())
 
-    resp_a = client.get("/queue", params={"tab_id": "A"})
-    resp_b = client.get("/queue", params={"tab_id": "B"})
-    assert resp_a.json()["queue"] == "1/2"
-    assert resp_b.json()["queue"] == "1/2"
+    resp = client.get("/queue")
+    assert resp.json()["queue"] == 2
 
-    # Mark one task as processing; counts should remain until done
+    # Mark one task as processing; count should remain until done
     task_id = asyncio.run(queue.queue.get())
     task = queue.get_task(task_id)
     task.status = "processing"
     queue.queue.task_done()
-    resp_a = client.get("/queue", params={"tab_id": task.tab_id})
-    resp_b = client.get("/queue", params={"tab_id": "B" if task.tab_id != "B" else "A"})
-    assert resp_a.json()["queue"] == "1/2"
-    assert resp_b.json()["queue"] == "1/2"
+    resp = client.get("/queue")
+    assert resp.json()["queue"] == 2
 
     # Complete the task and ensure counts decrease
     task.status = "done"
-    resp_a = client.get("/queue", params={"tab_id": "A"})
-    resp_b = client.get("/queue", params={"tab_id": "B"})
-    assert resp_a.json()["queue"] == ("0/1" if task.tab_id == "A" else "1/1")
-    assert resp_b.json()["queue"] == ("0/1" if task.tab_id == "B" else "1/1")
+    resp = client.get("/queue")
+    assert resp.json()["queue"] == 1

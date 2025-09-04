@@ -7,19 +7,16 @@ def test_queue_counts():
     importlib.reload(queue)
 
     async def run():
-        await queue.add_task("ioc1", tab_id="A")
-        await queue.add_task("ioc2", tab_id="A")
-        await queue.add_task("ioc3", tab_id="B")
-        assert queue.get_queue_size("A") == "2/3"
-        assert queue.get_queue_size("B") == "1/3"
+        await queue.add_task("ioc1")
+        await queue.add_task("ioc2")
+        await queue.add_task("ioc3")
+        assert queue.get_queue_size() == 3
         task_id = await queue.queue.get()
         task = queue.get_task(task_id)
         task.status = "processing"
         queue.queue.task_done()
-        assert queue.get_queue_size("A") == "2/3"
-        assert queue.get_queue_size("B") == "1/3"
+        assert queue.get_queue_size() == 3
         task.status = "done"
-        assert queue.get_queue_size("A") == "1/2"
-        assert queue.get_queue_size("B") == "1/2"
+        assert queue.get_queue_size() == 2
 
     asyncio.run(run())
