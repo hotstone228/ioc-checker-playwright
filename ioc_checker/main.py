@@ -2,6 +2,8 @@ from pathlib import Path
 from contextlib import asynccontextmanager
 from collections.abc import AsyncIterator
 import logging
+import os
+import tempfile
 
 from fastapi import (
     FastAPI,
@@ -15,6 +17,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 from iocsearcher.searcher import Searcher
+from iocsearcher.document import open_document
 
 from .queue import add_task, get_task
 from .worker import start_workers
@@ -76,7 +79,8 @@ async def parse_iocs(req: ParseRequest) -> dict[str, list[str]]:
     return result
 
 
-ALLOWED_FILE_TYPES = {".txt", ".log", ".csv", ".json"}
+TEXT_FILE_TYPES = {".txt", ".log", ".csv", ".json"}
+ALLOWED_FILE_TYPES = TEXT_FILE_TYPES | {".pdf", ".html", ".htm", ".docx"}
 
 
 @app.post("/parse-file")
@@ -85,9 +89,22 @@ async def parse_file(file: UploadFile = File(...)) -> dict[str, list[str]]:
     ext = Path(file.filename).suffix.lower()
     if ext not in ALLOWED_FILE_TYPES:
         raise HTTPException(status_code=400, detail="Unsupported file type")
-    content = (await file.read()).decode("utf-8", "ignore")
+    data = await file.read()
+    if ext in TEXT_FILE_TYPES:
+        text = data.decode("utf-8", "ignore")
+    else:
+        with tempfile.NamedTemporaryFile(delete=False) as tmp:
+            tmp.write(data)
+            tmp_path = tmp.name
+        try:
+            doc = open_document(tmp_path)
+            if doc is None:
+                raise HTTPException(status_code=400, detail="Unsupported file type")
+            text, _ = doc.get_text(options={})
+        finally:
+            os.unlink(tmp_path)
     searcher = Searcher()
-    parsed = searcher.search_data(content)
+    parsed = searcher.search_data(text)
     logger.info("Found %d IOC(s)", len(parsed))
     result: dict[str, list[str]] = {}
     for item in parsed:

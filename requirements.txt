@@ -7,3 +7,5 @@ hypercorn
 httpx
 sqlalchemy
 aiosqlite
+python-docx
+fpdf

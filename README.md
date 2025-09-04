@@ -44,7 +44,7 @@ Provider API tokens must be supplied through the web interface under **Advanced 
 ### API
 
 - `POST /parse` – body `{ "text": "..." }` returns detected IOCs grouped by type.
-- `POST /parse-file` – multipart upload of a text-based file (`.txt`, `.log`, `.csv`, `.json`) returning detected IOCs.
+- `POST /parse-file` – multipart upload of a file (text, HTML, PDF, or Word `.docx`) returning detected IOCs.
 - `POST /scan` – body `{ "service": "kaspersky", "iocs": ["..."], "token": "..." }` queues IOCs for the specified service (token required when the provider mandates it).
 - `GET /status/{id}` – retrieve task progress and results.
 
